@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数字系统实验台</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body data-page="{{ page }}">
+  <div class="app-layout">
+    <aside class="sidebar card glass">
+      <div class="sidebar-head">
+        <p class="kicker">Digital Lab</p>
+        <h2>智能实验导航</h2>
+      </div>
+
+      <a href="{{ url_for('converter_page') }}" class="nav-item {% if page == 'converter' %}active{% endif %}">① 数字转换与编码</a>
+      <a href="{{ url_for('arithmetic_page') }}" class="nav-item {% if page == 'arithmetic' %}active{% endif %}">② 加减法与溢出判断</a>
+      <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">③ 后台管理概览</a>
+      <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">④ 实验操作指南</a>
+
+      <div class="sidebar-widget">
+        <h4>实验建议</h4>
+        <ul>
+          <li>先用 8 位测试边界值，再切 16/32 位验证。</li>
+          <li>优先对比“数学结果”和“截断有符号值”。</li>
+          <li>历史记录支持滚动，可快速复盘操作轨迹。</li>
+        </ul>
+      </div>
+
+      <div class="status-mini">
+        <span class="tag">在线</span>
+        <span class="tag">模块 4/4</span>
+      </div>
+      <p class="hint">功能已经拆分为独立页面，左侧导航可直接跳转。</p>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar card glass">
+        <div>
+          <h1>数字表示与运算可视化平台</h1>
+          <p class="sub-title">编码 · 运算 · 溢出 · 统计，一站式联动实验</p>
+        </div>
+        <div id="clock" class="clock">--:--:--</div>
+      </header>
+
+      <nav class="floating-nav card">
+        <a href="{{ url_for('converter_page') }}">工作台</a>
+        <a href="{{ url_for('arithmetic_page') }}">运算模块</a>
+        <a href="{{ url_for('admin_page') }}">后台管理</a>
+        <a href="{{ url_for('guide_page') }}">操作指南</a>
+      </nav>
+
+      {% if page == 'converter' %}
+      <section class="workspace card page-card">
+        <div id="converter-panel" class="panel">
+          <h3>两个数字转换 + 原码/反码/补码/移码</h3>
+          <div class="grid two-col">
+            <label>数字 A <input id="a" placeholder="例如 -1010 或 26" /></label>
+            <label>A 进制
+              <select id="a-base">
+                <option value="2">二进制</option><option value="8">八进制</option><option value="10" selected>十进制</option><option value="16">十六进制</option>
+              </select>
+            </label>
+            <label>数字 B <input id="b" placeholder="例如 17" /></label>
+            <label>B 进制
+              <select id="b-base">
+                <option value="2">二进制</option><option value="8">八进制</option><option value="10" selected>十进制</option><option value="16">十六进制</option>
+              </select>
+            </label>
+            <label>输出进制
+              <select id="out-base">
+                <option value="2">二进制</option><option value="8">八进制</option><option value="10" selected>十进制</option><option value="16">十六进制</option>
+              </select>
+            </label>
+            <label>位宽
+              <select id="width">
+                <option value="">自动推断</option><option value="4">4位</option><option value="8">8位</option><option value="16">16位</option><option value="32">32位</option>
+              </select>
+            </label>
+          </div>
+          <button id="convert-btn" class="btn">开始转换</button>
+          <pre id="convert-result" class="result"></pre>
+        </div>
+      </section>
+      {% elif page == 'arithmetic' %}
+      <section class="workspace card page-card">
+        <div id="arithmetic-panel" class="panel">
+          <h3>加减法 + 溢出判断 + 可视化</h3>
+          <div class="grid two-col">
+            <label>数字 A <input id="calc-a" placeholder="例如 120" /></label>
+            <label>数字 B <input id="calc-b" placeholder="例如 20" /></label>
+            <label>输入进制
+              <select id="calc-base">
+                <option value="2">二进制</option><option value="8">八进制</option><option value="10" selected>十进制</option><option value="16">十六进制</option>
+              </select>
+            </label>
+            <label>位宽
+              <select id="calc-width"><option value="4">4位</option><option value="8" selected>8位</option><option value="16">16位</option><option value="32">32位</option></select>
+            </label>
+          </div>
+          <div class="btn-row">
+            <button data-op="+" class="btn calc-btn">执行加法</button>
+            <button data-op="-" class="btn calc-btn">执行减法</button>
+          </div>
+          <pre id="calc-result" class="result"></pre>
+          <div class="overflow-bar-wrap">
+            <div id="overflow-bar" class="overflow-bar"></div>
+          </div>
+          <div id="cla-visual" class="cla-visual hidden">
+            <h4>超前进位（CLA）可视化（仅加法）</h4>
+            <div id="cla-summary" class="cla-summary"></div>
+            <div id="cla-carry-chain" class="cla-carry-chain"></div>
+            <div class="cla-table-wrap">
+              <table class="cla-table">
+                <thead>
+                  <tr>
+                    <th>位 i</th>
+                    <th>Aᵢ</th>
+                    <th>Bᵢ</th>
+                    <th>Pᵢ=Aᵢ⊕Bᵢ</th>
+                    <th>Gᵢ=Aᵢ·Bᵢ</th>
+                    <th>Cᵢ</th>
+                    <th>Sᵢ=Pᵢ⊕Cᵢ</th>
+                  </tr>
+                </thead>
+                <tbody id="cla-table-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+      {% elif page == 'admin' %}
+      <section class="workspace card page-card">
+        <article id="admin-panel" class="panel page-panel">
+          <h3>后台管理概览</h3>
+          <p>可在这里统一查看实验服务状态、数据源配置和功能开关（示例模块，可继续接入真实后台接口）。</p>
+          <div class="chip-row">
+            <span class="chip">服务状态：正常</span>
+            <span class="chip">日志级别：INFO</span>
+            <span class="chip">存储：已连接</span>
+          </div>
+        </article>
+      </section>
+      {% elif page == 'guide' %}
+      <section class="workspace card page-card">
+        <article id="guide-panel" class="panel page-panel">
+          <h3>实验操作指南</h3>
+          <ol>
+            <li>先在转换模块验证不同进制输入是否符合预期。</li>
+            <li>再切到加减法观察溢出条变化与截断结果。</li>
+            <li>最后在右侧对照历史记录和统计图做复盘。</li>
+          </ol>
+        </article>
+      </section>
+      {% endif %}
+    </main>
+
+    <aside class="right-rail">
+      <section id="history-panel" class="history card">
+        <h2>历史记录</h2>
+        <div id="history-list" class="history-list"></div>
+      </section>
+
+      <section id="stats-panel" class="chart-area card">
+        <h3>动态统计图表（操作类型与进制使用次数）</h3>
+        <canvas id="stats-chart"></canvas>
+      </section>
+    </aside>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
