@@ -58,6 +58,12 @@ def validate_width(width: int) -> int:
     return width
 
 
+def normalize_to_signed(value: int, width: int) -> int:
+    value &= _mask(width)
+    sign_bit = 1 << (width - 1)
+    return value - (1 << width) if value & sign_bit else value
+
+
 def compute_codes(value: int, width: int) -> Dict[str, str]:
     if width < 2:
         raise InputError("位宽必须至少为 2。")
@@ -148,6 +154,70 @@ def cla_add(a: int, b: int, width: int) -> Dict:
     }
 
 
+def simulate_alu8(a: int, b: int, func: int, width: int, cin: int, phase: int) -> Dict:
+    mask = _mask(width)
+    a_u = a & mask
+    b_u = b & mask
+
+    operations = {
+        0: ("ADD", a_u + b_u + cin),
+        1: ("SUB", a_u + ((~b_u) & mask) + 1),
+        2: ("AND", a_u & b_u),
+        3: ("OR", a_u | b_u),
+        4: ("XOR", a_u ^ b_u),
+        5: ("NOT A", (~a_u) & mask),
+        6: ("PASS A", a_u),
+        7: ("INC A", a_u + 1),
+    }
+    if func not in operations:
+        raise InputError("功能码仅支持 0~7。")
+
+    op_name, raw_result = operations[func]
+    result_u = raw_result & mask
+    carry_out = 1 if raw_result > mask else 0
+
+    a_signed = normalize_to_signed(a_u, width)
+    b_signed = normalize_to_signed(b_u, width)
+    result_signed = normalize_to_signed(result_u, width)
+
+    overflow = False
+    if func in {0, 1, 7}:
+        if func == 0:
+            math_result = a_signed + b_signed + cin
+        elif func == 1:
+            math_result = a_signed - b_signed
+        else:
+            math_result = a_signed + 1
+        min_val, max_val = -(1 << (width - 1)), (1 << (width - 1)) - 1
+        overflow = not (min_val <= math_result <= max_val)
+
+    phase = max(0, min(3, phase))
+    phases = [
+        "T0 取数：锁存输入 A/B 与控制位。",
+        "T1 运算：组合逻辑产生中间结果。",
+        "T2 校验：更新进位/溢出/零标志。",
+        "T3 输出：结果写回总线并显示。",
+    ]
+
+    return {
+        "op_name": op_name,
+        "func": func,
+        "phase": phase,
+        "phase_desc": phases[phase],
+        "a_binary": format(a_u, f"0{width}b"),
+        "b_binary": format(b_u, f"0{width}b"),
+        "result_binary": format(result_u, f"0{width}b"),
+        "a_signed": a_signed,
+        "b_signed": b_signed,
+        "result_signed": result_signed,
+        "carry_out": carry_out,
+        "overflow": overflow,
+        "zero": result_u == 0,
+        "negative": ((result_u >> (width - 1)) & 1) == 1,
+        "control_word": f"F={func:03b}, CIN={cin}, T={phase:02b}",
+    }
+
+
 def add_history(item_type: str, payload: Dict) -> None:
     history.appendleft(
         {
@@ -171,6 +241,11 @@ def converter_page():
 @app.route("/arithmetic")
 def arithmetic_page():
     return render_template("index.html", page="arithmetic")
+
+
+@app.route("/simulator")
+def simulator_page():
+    return render_template("index.html", page="simulator")
 
 
 @app.route("/admin")
@@ -257,6 +332,33 @@ def api_calc():
             },
         )
         return jsonify({"ok": True, "result": payload})
+    except (InputError, ValueError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@app.post("/api/simulate")
+def api_simulate():
+    data = request.get_json(silent=True) or {}
+    try:
+        width = validate_width(int(data.get("width", 8)))
+        base = int(data.get("base", 2))
+        a = parse_number(str(data.get("a", "0")), base)
+        b = parse_number(str(data.get("b", "0")), base)
+        func = int(data.get("func", 0))
+        cin = 1 if data.get("cin") else 0
+        phase = int(data.get("phase", 0))
+
+        result = simulate_alu8(a, b, func, width, cin, phase)
+
+        add_history(
+            "simulator",
+            {
+                "label": f"仿真: {result['op_name']} (F={func:03b})",
+                "detail": f"A={result['a_binary']} B={result['b_binary']} => Y={result['result_binary']}",
+                "func": func,
+            },
+        )
+        return jsonify({"ok": True, "result": result})
     except (InputError, ValueError) as exc:
         return jsonify({"ok": False, "error": str(exc)}), 400
 
