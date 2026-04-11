@@ -192,12 +192,14 @@ function readSwitchValue(containerId) {
   return value;
 }
 
+
 function updateFuncDesc() {
   const funcValue = readSwitchValue("switch-func");
   const desc = byId("func-desc");
   if (!desc) return;
   desc.textContent = `当前：${String(funcValue).padStart(3, "0")} = ${FUNC_DESC[funcValue]}`;
 }
+
 
 function initSimulator() {
   const simBtn = byId("simulate-btn");
@@ -211,10 +213,12 @@ function initSimulator() {
     makeBitSwitches("switch-a", width);
     makeBitSwitches("switch-b", width);
     makeBitSwitches("switch-func", 3);
+
     for (const btn of document.querySelectorAll('#switch-func .toggle-switch')) {
       btn.addEventListener("click", updateFuncDesc);
     }
     updateFuncDesc();
+
   };
   rebuild();
 

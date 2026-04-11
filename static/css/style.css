@@ -428,6 +428,7 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,2
   font-weight: 600;
 }
 
+
 .sim-legend {
   display: grid;
   grid-template-columns: repeat(2, minmax(220px, 1fr));
@@ -471,3 +472,4 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,2
 @media (max-width: 900px) {
   .sim-legend { grid-template-columns: 1fr; }
 }
+
