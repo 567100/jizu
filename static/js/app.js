@@ -148,6 +148,114 @@ function renderCla(result, op, width) {
   }
 }
 
+let phase = 0;
+function makeBitSwitches(containerId, count) {
+  const container = byId(containerId);
+  if (!container) return;
+  container.innerHTML = "";
+  for (let i = count - 1; i >= 0; i -= 1) {
+    const btn = document.createElement("button");
+    btn.className = "toggle-switch";
+    btn.dataset.bit = String(i);
+    btn.dataset.on = "0";
+    btn.textContent = `${i}:0`;
+    btn.addEventListener("click", () => {
+      const on = btn.dataset.on === "1" ? "0" : "1";
+      btn.dataset.on = on;
+      btn.classList.toggle("on", on === "1");
+      btn.textContent = `${i}:${on}`;
+    });
+    container.appendChild(btn);
+  }
+}
+
+function readSwitchValue(containerId) {
+  const container = byId(containerId);
+  if (!container) return 0;
+  let value = 0;
+  for (const btn of container.querySelectorAll(".toggle-switch[data-bit]")) {
+    const bit = Number(btn.dataset.bit);
+    const on = btn.dataset.on === "1" ? 1 : 0;
+    value |= (on << bit);
+  }
+  return value;
+}
+
+function initSimulator() {
+  const simBtn = byId("simulate-btn");
+  if (!simBtn) return;
+
+  const widthSelect = byId("sim-width");
+  const phaseLabel = byId("phase-label");
+
+  const rebuild = () => {
+    const width = Number(widthSelect.value);
+    makeBitSwitches("switch-a", width);
+    makeBitSwitches("switch-b", width);
+    makeBitSwitches("switch-func", 3);
+  };
+  rebuild();
+
+  widthSelect.addEventListener("change", rebuild);
+
+  const cinBtn = document.querySelector('[data-role="cin"]');
+  cinBtn?.addEventListener("click", () => {
+    const next = cinBtn.dataset.on === "1" ? "0" : "1";
+    cinBtn.dataset.on = next;
+    cinBtn.classList.toggle("on", next === "1");
+    cinBtn.textContent = `CIN=${next}`;
+  });
+
+  for (const pbtn of document.querySelectorAll('[data-role="phase"]')) {
+    pbtn.addEventListener("click", () => {
+      phase += Number(pbtn.dataset.step || 0);
+      if (phase < 0) phase = 0;
+      if (phase > 3) phase = 3;
+      phaseLabel.textContent = `当前阶段：T${phase}`;
+    });
+  }
+
+  simBtn.addEventListener("click", async () => {
+    const resultBox = byId("sim-result");
+    try {
+      const width = Number(widthSelect.value);
+      const base = Number(byId("sim-base").value);
+      const aVal = readSwitchValue("switch-a");
+      const bVal = readSwitchValue("switch-b");
+      const func = readSwitchValue("switch-func");
+      const cin = document.querySelector('[data-role="cin"]')?.dataset.on === "1";
+
+      const payload = {
+        width,
+        base,
+        a: base === 2 ? aVal.toString(2) : base === 16 ? aVal.toString(16) : String(aVal),
+        b: base === 2 ? bVal.toString(2) : base === 16 ? bVal.toString(16) : String(bVal),
+        func,
+        cin,
+        phase,
+      };
+
+      const data = await fetchJSON("/api/simulate", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const r = data.result;
+      resultBox.textContent = [
+        `操作: ${r.op_name} (F=${String(r.func).padStart(3, "0")})`,
+        `时序: T${r.phase} - ${r.phase_desc}`,
+        `控制字: ${r.control_word}`,
+        `A=${r.a_binary} (${r.a_signed})`,
+        `B=${r.b_binary} (${r.b_signed})`,
+        `Y=${r.result_binary} (${r.result_signed})`,
+        `标志位: C=${r.carry_out}, V=${r.overflow ? 1 : 0}, Z=${r.zero ? 1 : 0}, N=${r.negative ? 1 : 0}`,
+      ].join("\n");
+      await Promise.all([refreshHistory(), refreshStats()]);
+    } catch (err) {
+      showError(resultBox, err.message);
+    }
+  });
+}
+
 async function refreshHistory() {
   const container = byId("history-list");
   if (!container) return;
@@ -170,8 +278,13 @@ async function refreshStats() {
   const typeCounter = data.stats.type_counter || {};
   const baseCounter = data.stats.base_counter || {};
 
-  const labels = ["转换操作", "算术操作", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
-  const values = [typeCounter.convert || 0, typeCounter.arithmetic || 0, ...Object.values(baseCounter)];
+  const labels = ["转换操作", "算术操作", "运算器仿真", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
+  const values = [
+    typeCounter.convert || 0,
+    typeCounter.arithmetic || 0,
+    typeCounter.simulator || 0,
+    ...Object.values(baseCounter),
+  ];
 
   if (chart) chart.destroy();
   chart = new Chart(canvas, {
@@ -181,7 +294,7 @@ async function refreshStats() {
       datasets: [{
         label: "次数",
         data: values,
-        backgroundColor: ["#4a67ff", "#00a9b7", "#ff9f40", "#7bc96f", "#c792ea", "#f45b69"],
+        backgroundColor: ["#4a67ff", "#00a9b7", "#7f8cff", "#ff9f40", "#7bc96f", "#c792ea", "#f45b69"],
         borderRadius: 6,
       }],
     },
@@ -192,6 +305,7 @@ async function refreshStats() {
   });
 }
 
+initSimulator();
 Promise.all([refreshHistory(), refreshStats()]).catch((err) => {
   console.error("初始化失败", err);
 });

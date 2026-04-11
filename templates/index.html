@@ -17,8 +17,9 @@
 
       <a href="{{ url_for('converter_page') }}" class="nav-item {% if page == 'converter' %}active{% endif %}">① 数字转换与编码</a>
       <a href="{{ url_for('arithmetic_page') }}" class="nav-item {% if page == 'arithmetic' %}active{% endif %}">② 加减法与溢出判断</a>
-      <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">③ 后台管理概览</a>
-      <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">④ 实验操作指南</a>
+      <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
+      <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
+      <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -48,6 +49,7 @@
       <nav class="floating-nav card">
         <a href="{{ url_for('converter_page') }}">工作台</a>
         <a href="{{ url_for('arithmetic_page') }}">运算模块</a>
+        <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
         <a href="{{ url_for('admin_page') }}">后台管理</a>
         <a href="{{ url_for('guide_page') }}">操作指南</a>
       </nav>
@@ -129,6 +131,48 @@
               </table>
             </div>
           </div>
+        </div>
+      </section>
+      {% elif page == 'simulator' %}
+      <section class="workspace card page-card">
+        <div id="sim-panel" class="panel">
+          <h3>8 功能运算器：拨动式按钮仿真页面</h3>
+          <p class="sim-hint">通过拨动输入/控制按钮，模拟硬件时序 T0~T3 的数据输入、逻辑运算与输出过程。</p>
+          <div class="grid two-col">
+            <label>位宽
+              <select id="sim-width"><option value="4">4位</option><option value="8" selected>8位</option><option value="16">16位</option><option value="32">32位</option></select>
+            </label>
+            <label>输入进制
+              <select id="sim-base"><option value="2" selected>二进制</option><option value="10">十进制</option><option value="16">十六进制</option></select>
+            </label>
+          </div>
+
+          <div class="switch-area">
+            <div>
+              <h4>A 输入拨码</h4>
+              <div id="switch-a" class="switch-row"></div>
+            </div>
+            <div>
+              <h4>B 输入拨码</h4>
+              <div id="switch-b" class="switch-row"></div>
+            </div>
+            <div>
+              <h4>功能码 F2 F1 F0（8种）</h4>
+              <div id="switch-func" class="switch-row small"></div>
+            </div>
+            <div>
+              <h4>控制位</h4>
+              <div class="switch-row small">
+                <button class="toggle-switch" data-role="cin" data-on="0">CIN=0</button>
+                <button class="toggle-switch" data-role="phase" data-step="-1">T-</button>
+                <button class="toggle-switch" data-role="phase" data-step="1">T+</button>
+              </div>
+              <p id="phase-label" class="phase-label">当前阶段：T0</p>
+            </div>
+          </div>
+
+          <button id="simulate-btn" class="btn">执行仿真</button>
+          <pre id="sim-result" class="result"></pre>
         </div>
       </section>
       {% elif page == 'admin' %}
