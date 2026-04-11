@@ -1,5 +1,16 @@
 const byId = (id) => document.getElementById(id);
 
+const FUNC_DESC = {
+  0: "ADD（A + B + CIN）",
+  1: "SUB（A - B，补码减法）",
+  2: "AND（按位与）",
+  3: "OR（按位或）",
+  4: "XOR（按位异或）",
+  5: "NOT A（按位取反）",
+  6: "PASS A（直通 A）",
+  7: "INC A（A + 1）",
+};
+
 function showError(container, message) {
   container.textContent = `❌ 异常: ${message}`;
 }
@@ -181,6 +192,15 @@ function readSwitchValue(containerId) {
   return value;
 }
 
+
+function updateFuncDesc() {
+  const funcValue = readSwitchValue("switch-func");
+  const desc = byId("func-desc");
+  if (!desc) return;
+  desc.textContent = `当前：${String(funcValue).padStart(3, "0")} = ${FUNC_DESC[funcValue]}`;
+}
+
+
 function initSimulator() {
   const simBtn = byId("simulate-btn");
   if (!simBtn) return;
@@ -193,6 +213,12 @@ function initSimulator() {
     makeBitSwitches("switch-a", width);
     makeBitSwitches("switch-b", width);
     makeBitSwitches("switch-func", 3);
+
+    for (const btn of document.querySelectorAll('#switch-func .toggle-switch')) {
+      btn.addEventListener("click", updateFuncDesc);
+    }
+    updateFuncDesc();
+
   };
   rebuild();
 

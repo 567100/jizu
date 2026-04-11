@@ -171,6 +171,36 @@
             </div>
           </div>
 
+
+          <div class="sim-legend">
+            <div class="legend-card">
+              <h4>功能位（F2 F1 F0）说明</h4>
+              <p id="func-desc" class="legend-current">当前：000 = ADD（A + B + CIN）</p>
+              <ul class="legend-list">
+                <li><code>000</code>：ADD（A + B + CIN）</li>
+                <li><code>001</code>：SUB（A - B，补码减法）</li>
+                <li><code>010</code>：AND</li>
+                <li><code>011</code>：OR</li>
+                <li><code>100</code>：XOR</li>
+                <li><code>101</code>：NOT A</li>
+                <li><code>110</code>：PASS A</li>
+                <li><code>111</code>：INC A</li>
+              </ul>
+            </div>
+            <div class="legend-card">
+              <h4>控制位 / 时序说明</h4>
+              <ul class="legend-list">
+                <li><code>CIN</code>：加法进位输入（仅 ADD 有效）</li>
+                <li><code>T- / T+</code>：切换当前时序阶段</li>
+                <li><code>T0</code>：锁存输入</li>
+                <li><code>T1</code>：执行组合逻辑运算</li>
+                <li><code>T2</code>：更新标志位（C/V/Z/N）</li>
+                <li><code>T3</code>：输出到结果总线</li>
+              </ul>
+            </div>
+          </div>
+
+
           <button id="simulate-btn" class="btn">执行仿真</button>
           <pre id="sim-result" class="result"></pre>
         </div>
