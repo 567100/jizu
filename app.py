@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from datetime import datetime, timezone
+import re
 from typing import Deque, Dict, List
 
 from flask import Flask, jsonify, render_template, request
@@ -228,6 +229,110 @@ def add_history(item_type: str, payload: Dict) -> None:
     )
 
 
+def parse_asm_number(token: str) -> int:
+    text = token.strip().lower()
+    if not text:
+        raise InputError("立即数不能为空。")
+    if text.endswith("h"):
+        return int(text[:-1], 16)
+    if text.endswith("b"):
+        return int(text[:-1], 2)
+    if text.endswith("o"):
+        return int(text[:-1], 8)
+    if text.endswith("d"):
+        return int(text[:-1], 10)
+    if text.startswith("0b") or text.startswith("0o") or text.startswith("0x"):
+        return int(text, 0)
+    return int(text, 10)
+
+
+def parse_register(token: str) -> int:
+    text = token.strip().upper()
+    if not re.fullmatch(r"R([0-9]|1[0-5])", text):
+        raise InputError(f"寄存器 '{token}' 非法，应为 R0~R15。")
+    return int(text[1:])
+
+
+def assemble_line(line: str) -> Dict:
+    clean = line.split(";", 1)[0].split("#", 1)[0].strip()
+    if not clean:
+        return {"skip": True}
+
+    parts = clean.split(maxsplit=1)
+    mnemonic = parts[0].upper()
+    operands_raw = parts[1] if len(parts) > 1 else ""
+    operands = [item.strip() for item in operands_raw.split(",") if item.strip()]
+
+    opcode = {
+        "NOP": 0x0,
+        "LDI": 0x1,
+        "MOV": 0x2,
+        "ADD": 0x3,
+        "SUB": 0x4,
+        "AND": 0x5,
+        "OR": 0x6,
+        "XOR": 0x7,
+        "NOT": 0x8,
+        "SHL": 0x9,
+        "SHR": 0xA,
+        "LD": 0xB,
+        "ST": 0xC,
+        "JMP": 0xD,
+        "JZ": 0xE,
+        "HLT": 0xF,
+    }
+    if mnemonic not in opcode:
+        raise InputError(f"不支持的指令 '{mnemonic}'。")
+
+    op = opcode[mnemonic]
+    word = op << 12
+    desc = ""
+
+    if mnemonic in {"NOP", "HLT"}:
+        if operands:
+            raise InputError(f"{mnemonic} 不需要操作数。")
+        desc = "零操作数指令"
+    elif mnemonic in {"MOV", "ADD", "SUB", "AND", "OR", "XOR"}:
+        if len(operands) != 2:
+            raise InputError(f"{mnemonic} 需要 2 个寄存器操作数。")
+        rd = parse_register(operands[0])
+        rs = parse_register(operands[1])
+        word |= (rd << 8) | (rs << 4)
+        desc = f"{mnemonic} Rd,Rs"
+    elif mnemonic in {"NOT", "SHL", "SHR"}:
+        if len(operands) != 1:
+            raise InputError(f"{mnemonic} 需要 1 个寄存器操作数。")
+        rd = parse_register(operands[0])
+        word |= rd << 8
+        desc = f"{mnemonic} Rd"
+    elif mnemonic in {"LDI", "LD", "ST"}:
+        if len(operands) != 2:
+            raise InputError(f"{mnemonic} 需要 2 个操作数。")
+        rd = parse_register(operands[0])
+        imm = parse_asm_number(operands[1])
+        if not (0 <= imm <= 0xFF):
+            raise InputError(f"{mnemonic} 的第二操作数应在 0~255。")
+        word |= (rd << 8) | imm
+        desc = f"{mnemonic} Rd,imm8/addr8"
+    elif mnemonic in {"JMP", "JZ"}:
+        if len(operands) != 1:
+            raise InputError(f"{mnemonic} 需要 1 个地址操作数。")
+        addr = parse_asm_number(operands[0])
+        if not (0 <= addr <= 0xFFF):
+            raise InputError(f"{mnemonic} 地址应在 0~4095。")
+        word |= addr
+        desc = f"{mnemonic} addr12"
+
+    return {
+        "skip": False,
+        "mnemonic": mnemonic,
+        "machine_code": f"0x{word:04X}",
+        "binary": format(word, "016b"),
+        "desc": desc,
+        "normalized": clean,
+    }
+
+
 @app.route("/")
 def index():
     return converter_page()
@@ -256,6 +361,11 @@ def admin_page():
 @app.route("/guide")
 def guide_page():
     return render_template("index.html", page="guide")
+
+
+@app.route("/instruction")
+def instruction_page():
+    return render_template("index.html", page="instruction")
 
 
 @app.post("/api/convert")
@@ -389,6 +499,37 @@ def api_stats():
             },
         }
     )
+
+
+@app.post("/api/assemble")
+def api_assemble():
+    data = request.get_json(silent=True) or {}
+    source = str(data.get("source", ""))
+    if not source.strip():
+        return jsonify({"ok": False, "error": "请输入至少一条汇编语句。"}), 400
+
+    lines = source.splitlines()
+    result = []
+    for idx, line in enumerate(lines, start=1):
+        try:
+            assembled = assemble_line(line)
+            if assembled["skip"]:
+                continue
+            result.append({"line": idx, "source": assembled["normalized"], **assembled})
+        except (InputError, ValueError) as exc:
+            return jsonify({"ok": False, "error": f"第 {idx} 行错误：{exc}"}), 400
+
+    if not result:
+        return jsonify({"ok": False, "error": "未检测到有效指令。"}), 400
+
+    add_history(
+        "instruction",
+        {
+            "label": "指令系统：汇编转机器码",
+            "detail": f"共编译 {len(result)} 条指令",
+        },
+    )
+    return jsonify({"ok": True, "result": result})
 
 
 if __name__ == "__main__":

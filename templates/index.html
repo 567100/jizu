@@ -20,6 +20,7 @@
       <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
       <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
       <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
+      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 中央处理器指令系统</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -52,6 +53,7 @@
         <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
         <a href="{{ url_for('admin_page') }}">后台管理</a>
         <a href="{{ url_for('guide_page') }}">操作指南</a>
+        <a href="{{ url_for('instruction_page') }}">指令系统</a>
       </nav>
 
       {% if page == 'converter' %}
@@ -226,6 +228,24 @@
             <li>再切到加减法观察溢出条变化与截断结果。</li>
             <li>最后在右侧对照历史记录和统计图做复盘。</li>
           </ol>
+        </article>
+      </section>
+      {% elif page == 'instruction' %}
+      <section class="workspace card page-card">
+        <article id="instruction-panel" class="panel page-panel">
+          <h3>第6章：中央处理器指令系统（汇编语句 → 16位机器码）</h3>
+          <p>按“每行一条指令”输入，支持注释（; 或 #）。输出 16 位二进制与 4 位十六进制机器码。</p>
+          <div class="instruction-layout">
+            <label>汇编输入
+              <textarea id="asm-source" class="asm-source" placeholder="示例：&#10;LDI R1, 10&#10;LDI R2, 0x14&#10;ADD R1, R2&#10;ST R1, 0x80&#10;HLT"></textarea>
+            </label>
+          </div>
+          <button id="assemble-btn" class="btn">编译为机器码</button>
+          <pre id="assemble-result" class="result"></pre>
+          <div class="instruction-note">
+            <strong>支持指令：</strong>
+            NOP, HLT, MOV, ADD, SUB, AND, OR, XOR, NOT, SHL, SHR, LDI, LD, ST, JMP, JZ
+          </div>
         </article>
       </section>
       {% endif %}

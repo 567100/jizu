@@ -469,7 +469,28 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,2
   padding: 1px 5px;
 }
 
+.instruction-layout {
+  margin: 10px 0;
+}
+
+.asm-source {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+  font-family: "Consolas", "Courier New", monospace;
+  line-height: 1.45;
+}
+
+.instruction-note {
+  margin-top: 10px;
+  font-size: 0.9rem;
+  color: #3a4f83;
+  background: #f6f9ff;
+  border: 1px solid #d8e3ff;
+  border-radius: 10px;
+  padding: 10px;
+}
+
 @media (max-width: 900px) {
   .sim-legend { grid-template-columns: 1fr; }
 }
-
