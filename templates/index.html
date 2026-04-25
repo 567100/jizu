@@ -20,6 +20,7 @@
       <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
       <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
       <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
+      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 第6章 指令系统汇编</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -32,7 +33,7 @@
 
       <div class="status-mini">
         <span class="tag">在线</span>
-        <span class="tag">模块 4/4</span>
+        <span class="tag">模块 6/6</span>
       </div>
       <p class="hint">功能已经拆分为独立页面，左侧导航可直接跳转。</p>
     </aside>
@@ -52,6 +53,7 @@
         <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
         <a href="{{ url_for('admin_page') }}">后台管理</a>
         <a href="{{ url_for('guide_page') }}">操作指南</a>
+        <a href="{{ url_for('instruction_page') }}">指令系统</a>
       </nav>
 
       {% if page == 'converter' %}
@@ -226,6 +228,19 @@
             <li>再切到加减法观察溢出条变化与截断结果。</li>
             <li>最后在右侧对照历史记录和统计图做复盘。</li>
           </ol>
+        </article>
+      </section>
+      {% elif page == 'instruction' %}
+      <section class="workspace card page-card">
+        <article id="instruction-panel" class="panel page-panel">
+          <h3>第6章：中央处理器指令系统（16位）</h3>
+          <p>将课本风格汇编语句翻译为 16 位机器码，为后续模型机实现打基础。</p>
+          <p>支持指令：NOP, MOV, ADD, SUB, AND, OR, XOR, NOT, LDI, LD, ST, JMP, JZ, JNZ, HALT（寄存器 R0~R3，支持标签）。</p>
+          <label>汇编源码
+            <textarea id="asm-input" class="asm-input" aria-label="汇编源码输入区" placeholder="START:\nLDI R0, 10\nLDI R1, 1\nLOOP: SUB R0, R0, R1\nJNZ R0, LOOP\nHALT"></textarea>
+          </label>
+          <button id="assemble-btn" class="btn">汇编生成机器码</button>
+          <pre id="asm-result" class="result"></pre>
         </article>
       </section>
       {% endif %}

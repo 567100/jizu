@@ -196,8 +196,17 @@ input, select {
   outline: none;
 }
 
+textarea {
+  border: 1px solid #d8dff8;
+  border-radius: 8px;
+  padding: 8px;
+  outline: none;
+  font-family: "Consolas", "Courier New", monospace;
+}
+
 input:focus,
-select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,255,.15); }
+select:focus,
+textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,255,.15); }
 
 .btn {
   border: none;
@@ -469,7 +478,12 @@ select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103,2
   padding: 1px 5px;
 }
 
+.asm-input {
+  width: 100%;
+  min-height: 220px;
+  resize: vertical;
+}
+
 @media (max-width: 900px) {
   .sim-legend { grid-template-columns: 1fr; }
 }
-
