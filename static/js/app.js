@@ -76,6 +76,38 @@ if (convertBtn) {
   });
 }
 
+const assembleBtn = byId("assemble-btn");
+if (assembleBtn) {
+  assembleBtn.addEventListener("click", async () => {
+    const resultBox = byId("asm-result");
+    try {
+      const payload = { source: byId("asm-input").value };
+      const data = await fetchJSON("/api/assemble", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const r = data.result;
+      const labels = Object.entries(r.labels || {})
+        .map(([k, v]) => `${k}=${v}`)
+        .join(", ");
+      resultBox.textContent = [
+        `机器字长: ${r.word_length} 位`,
+        `指令条数: ${r.instruction_count}`,
+        `标签数量: ${r.label_count}${labels ? ` (${labels})` : ""}`,
+        "",
+        "地址  十六进制  二进制               汇编",
+        ...r.lines.map((line) => {
+          const addr = String(line.address).padStart(4, "0");
+          return `${addr}  ${line.hex}   ${line.binary}   ${line.source}`;
+        }),
+      ].join("\n");
+      await Promise.all([refreshHistory(), refreshStats()]);
+    } catch (err) {
+      showError(resultBox, err.message);
+    }
+  });
+}
+
 for (const btn of document.querySelectorAll(".calc-btn")) {
   btn.addEventListener("click", async () => {
     const resultBox = byId("calc-result");
@@ -304,11 +336,12 @@ async function refreshStats() {
   const typeCounter = data.stats.type_counter || {};
   const baseCounter = data.stats.base_counter || {};
 
-  const labels = ["转换操作", "算术操作", "运算器仿真", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
+  const labels = ["转换操作", "算术操作", "运算器仿真", "指令汇编", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
   const values = [
     typeCounter.convert || 0,
     typeCounter.arithmetic || 0,
     typeCounter.simulator || 0,
+    typeCounter.instruction || 0,
     ...Object.values(baseCounter),
   ];
 

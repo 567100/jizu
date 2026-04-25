@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from datetime import datetime, timezone
+import re
 from typing import Deque, Dict, List
 
 from flask import Flask, jsonify, render_template, request
@@ -14,6 +15,221 @@ history: Deque[Dict] = deque(maxlen=MAX_HISTORY)
 
 class InputError(ValueError):
     """Invalid user input."""
+
+
+REGISTER_PATTERN = re.compile(r"^R([0-3])$", re.IGNORECASE)
+COMMENT_TOKENS = (";", "#", "//")
+
+
+def _parse_register(token: str) -> int:
+    match = REGISTER_PATTERN.match(token.strip())
+    if not match:
+        raise InputError(f"寄存器 '{token}' 非法，仅支持 R0~R3。")
+    return int(match.group(1))
+
+
+def _parse_int_token(token: str) -> int:
+    text = token.strip()
+    if not text:
+        raise InputError("立即数或地址不能为空。")
+    try:
+        return int(text, 0)
+    except ValueError as exc:
+        raise InputError(f"'{token}' 不是合法数字或标签。") from exc
+
+
+def _encode_unsigned(value: int, bits: int, name: str) -> int:
+    max_val = (1 << bits) - 1
+    if not (0 <= value <= max_val):
+        raise InputError(f"{name} 超出范围 [0, {max_val}]。")
+    return value
+
+
+def _encode_signed_or_unsigned(value: int, bits: int, name: str) -> int:
+    unsigned_max = (1 << bits) - 1
+    signed_min = -(1 << (bits - 1))
+    if 0 <= value <= unsigned_max:
+        return value
+    if signed_min <= value < 0:
+        return value & unsigned_max
+    raise InputError(f"{name} 超出 {bits} 位可编码范围。")
+
+
+def _strip_comments(line: str) -> str:
+    text = line
+    for token in COMMENT_TOKENS:
+        idx = text.find(token)
+        if idx != -1:
+            text = text[:idx]
+    return text.strip()
+
+
+def _split_operands(raw: str) -> List[str]:
+    return [part.strip() for part in raw.split(",") if part.strip()]
+
+
+def _resolve_label_or_number(token: str, labels: Dict[str, int]) -> int:
+    key = token.strip().upper()
+    if key in labels:
+        return labels[key]
+    return _parse_int_token(token)
+
+
+def _pack_common(opcode: int, reg1: int = 0, reg2: int = 0, low8: int = 0) -> int:
+    return ((opcode & 0xF) << 12) | ((reg1 & 0x3) << 10) | ((reg2 & 0x3) << 8) | (low8 & 0xFF)
+
+
+def _pack_jump(opcode: int, addr12: int) -> int:
+    return ((opcode & 0xF) << 12) | (addr12 & 0xFFF)
+
+
+def _normalize_addr_token(token: str) -> str:
+    text = token.strip()
+    if text.startswith("[") and text.endswith("]"):
+        return text[1:-1].strip()
+    return text
+
+
+def _encode_instruction(mnemonic: str, operands: List[str], labels: Dict[str, int]) -> int:
+    op = mnemonic.upper()
+
+    if op == "NOP":
+        if operands:
+            raise InputError("NOP 不接受操作数。")
+        return _pack_common(0x0)
+    if op == "MOV":
+        if len(operands) != 2:
+            raise InputError("MOV 语法: MOV Rd, Rs")
+        rd = _parse_register(operands[0])
+        rs = _parse_register(operands[1])
+        return _pack_common(0x1, rd, rs)
+    if op in {"ADD", "SUB", "AND", "OR", "XOR"}:
+        if len(operands) != 3:
+            raise InputError(f"{op} 语法: {op} Rd, Rs, Rt")
+        rd = _parse_register(operands[0])
+        rs = _parse_register(operands[1])
+        rt = _parse_register(operands[2])
+        opcode_map = {"ADD": 0x2, "SUB": 0x3, "AND": 0x4, "OR": 0x5, "XOR": 0x6}
+        return _pack_common(opcode_map[op], rd, rs, rt << 6)
+    if op == "NOT":
+        if len(operands) != 2:
+            raise InputError("NOT 语法: NOT Rd, Rs")
+        rd = _parse_register(operands[0])
+        rs = _parse_register(operands[1])
+        return _pack_common(0x7, rd, rs)
+    if op == "LDI":
+        if len(operands) != 2:
+            raise InputError("LDI 语法: LDI Rd, Imm8")
+        rd = _parse_register(operands[0])
+        imm_raw = _resolve_label_or_number(operands[1], labels)
+        imm8 = _encode_signed_or_unsigned(imm_raw, 8, "立即数")
+        return _pack_common(0x8, rd, 0, imm8)
+    if op == "LD":
+        if len(operands) != 2:
+            raise InputError("LD 语法: LD Rd, [Addr8]")
+        rd = _parse_register(operands[0])
+        addr_raw = _resolve_label_or_number(_normalize_addr_token(operands[1]), labels)
+        addr8 = _encode_unsigned(addr_raw, 8, "地址")
+        return _pack_common(0x9, rd, 0, addr8)
+    if op == "ST":
+        if len(operands) != 2:
+            raise InputError("ST 语法: ST Rs, [Addr8]")
+        rs = _parse_register(operands[0])
+        addr_raw = _resolve_label_or_number(_normalize_addr_token(operands[1]), labels)
+        addr8 = _encode_unsigned(addr_raw, 8, "地址")
+        return _pack_common(0xA, rs, 0, addr8)
+    if op == "JMP":
+        if len(operands) != 1:
+            raise InputError("JMP 语法: JMP Addr12")
+        addr_raw = _resolve_label_or_number(operands[0], labels)
+        addr12 = _encode_unsigned(addr_raw, 12, "跳转地址")
+        return _pack_jump(0xB, addr12)
+    if op == "JZ":
+        if len(operands) != 2:
+            raise InputError("JZ 语法: JZ Rd, Addr8")
+        rd = _parse_register(operands[0])
+        addr_raw = _resolve_label_or_number(operands[1], labels)
+        addr8 = _encode_unsigned(addr_raw, 8, "跳转地址")
+        return _pack_common(0xC, rd, 0, addr8)
+    if op == "JNZ":
+        if len(operands) != 2:
+            raise InputError("JNZ 语法: JNZ Rd, Addr8")
+        rd = _parse_register(operands[0])
+        addr_raw = _resolve_label_or_number(operands[1], labels)
+        addr8 = _encode_unsigned(addr_raw, 8, "跳转地址")
+        return _pack_common(0xD, rd, 0, addr8)
+    if op == "HALT":
+        if operands:
+            raise InputError("HALT 不接受操作数。")
+        return _pack_common(0xF)
+
+    raise InputError(f"不支持的指令: {mnemonic}")
+
+
+def assemble_program(source: str) -> Dict:
+    if source is None or not source.strip():
+        raise InputError("汇编源码不能为空。")
+
+    lines = source.splitlines()
+    labels: Dict[str, int] = {}
+    instructions = []
+    address = 0
+
+    for idx, raw in enumerate(lines, start=1):
+        stripped = _strip_comments(raw)
+        if not stripped:
+            continue
+
+        work = stripped
+        while ":" in work:
+            left, right = work.split(":", 1)
+            label = left.strip().upper()
+            if not label:
+                raise InputError(f"第 {idx} 行标签为空。")
+            if not re.match(r"^[A-Z_][A-Z0-9_]*$", label):
+                raise InputError(f"第 {idx} 行标签 '{label}' 非法。")
+            if label in labels:
+                raise InputError(f"第 {idx} 行标签 '{label}' 重复定义。")
+            labels[label] = address
+            work = right.strip()
+            if not work:
+                break
+
+        if work:
+            instructions.append({"line_no": idx, "source": work, "address": address})
+            address += 1
+
+    if not instructions:
+        raise InputError("没有可汇编的指令。")
+
+    machine_lines = []
+    for row in instructions:
+        src = row["source"].strip()
+        parts = src.split(None, 1)
+        mnemonic = parts[0]
+        operands = _split_operands(parts[1]) if len(parts) > 1 else []
+        try:
+            code = _encode_instruction(mnemonic, operands, labels)
+        except InputError as exc:
+            raise InputError(f"第 {row['line_no']} 行: {exc}") from exc
+
+        machine_lines.append(
+            {
+                "line_no": row["line_no"],
+                "address": row["address"],
+                "source": src,
+                "binary": format(code & 0xFFFF, "016b"),
+                "hex": f"0x{code & 0xFFFF:04X}",
+            }
+        )
+
+    return {
+        "word_length": 16,
+        "instruction_count": len(machine_lines),
+        "label_count": len(labels),
+        "labels": labels,
+        "lines": machine_lines,
+    }
 
 
 def parse_number(raw: str, base: int) -> int:
@@ -258,6 +474,11 @@ def guide_page():
     return render_template("index.html", page="guide")
 
 
+@app.route("/instruction")
+def instruction_page():
+    return render_template("index.html", page="instruction")
+
+
 @app.post("/api/convert")
 def api_convert():
     data = request.get_json(silent=True) or {}
@@ -356,6 +577,24 @@ def api_simulate():
                 "label": f"仿真: {result['op_name']} (F={func:03b})",
                 "detail": f"A={result['a_binary']} B={result['b_binary']} => Y={result['result_binary']}",
                 "func": func,
+            },
+        )
+        return jsonify({"ok": True, "result": result})
+    except (InputError, ValueError) as exc:
+        return jsonify({"ok": False, "error": str(exc)}), 400
+
+
+@app.post("/api/assemble")
+def api_assemble():
+    data = request.get_json(silent=True) or {}
+    try:
+        source = str(data.get("source", ""))
+        result = assemble_program(source)
+        add_history(
+            "instruction",
+            {
+                "label": f"汇编: {result['instruction_count']} 条指令",
+                "detail": f"机器字长={result['word_length']} 位，标签={result['label_count']} 个",
             },
         )
         return jsonify({"ok": True, "result": result})
