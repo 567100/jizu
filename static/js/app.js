@@ -1,4 +1,5 @@
 const byId = (id) => document.getElementById(id);
+const ADDRESS_DISPLAY_WIDTH = 4;
 
 const FUNC_DESC = {
   0: "ADD（A + B + CIN）",
@@ -97,7 +98,7 @@ if (assembleBtn) {
         "",
         "地址  十六进制  二进制               汇编",
         ...r.lines.map((line) => {
-          const addr = String(line.address).padStart(4, "0");
+          const addr = String(line.address).padStart(ADDRESS_DISPLAY_WIDTH, "0");
           return `${addr}  ${line.hex}   ${line.binary}   ${line.source}`;
         }),
       ].join("\n");

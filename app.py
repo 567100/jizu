@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections import Counter, deque
 from datetime import datetime, timezone
+import os
 import re
 from typing import Deque, Dict, List
 
@@ -18,6 +19,7 @@ class InputError(ValueError):
 
 
 REGISTER_PATTERN = re.compile(r"^R([0-3])$", re.IGNORECASE)
+LABEL_PATTERN = re.compile(r"^[A-Z_][A-Z0-9_]*$")
 COMMENT_TOKENS = (";", "#", "//")
 
 
@@ -85,6 +87,10 @@ def _pack_jump(opcode: int, addr12: int) -> int:
 
 def _normalize_addr_token(token: str) -> str:
     text = token.strip()
+    if text.startswith("[") and not text.endswith("]"):
+        raise InputError(f"地址写法 '{token}' 缺少右方括号 ]。")
+    if not text.startswith("[") and text.endswith("]"):
+        raise InputError(f"地址写法 '{token}' 缺少左方括号 [。")
     if text.startswith("[") and text.endswith("]"):
         return text[1:-1].strip()
     return text
@@ -186,8 +192,10 @@ def assemble_program(source: str) -> Dict:
             label = left.strip().upper()
             if not label:
                 raise InputError(f"第 {idx} 行标签为空。")
-            if not re.match(r"^[A-Z_][A-Z0-9_]*$", label):
-                raise InputError(f"第 {idx} 行标签 '{label}' 非法。")
+            if not LABEL_PATTERN.match(label):
+                raise InputError(
+                    f"第 {idx} 行标签 '{label}' 非法。标签必须以字母或下划线开头，且仅可包含字母、数字、下划线。"
+                )
             if label in labels:
                 raise InputError(f"第 {idx} 行标签 '{label}' 重复定义。")
             labels[label] = address
@@ -509,8 +517,10 @@ def api_convert():
             },
         )
         return jsonify({"ok": True, "result": result})
-    except (InputError, ValueError) as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 400
+    except InputError:
+        return jsonify({"ok": False, "error": "输入不合法，请检查格式与范围。"}), 400
+    except ValueError:
+        return jsonify({"ok": False, "error": "参数格式错误。"}), 400
 
 
 @app.post("/api/calc")
@@ -553,8 +563,10 @@ def api_calc():
             },
         )
         return jsonify({"ok": True, "result": payload})
-    except (InputError, ValueError) as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 400
+    except InputError:
+        return jsonify({"ok": False, "error": "输入不合法，请检查格式与范围。"}), 400
+    except ValueError:
+        return jsonify({"ok": False, "error": "参数格式错误。"}), 400
 
 
 @app.post("/api/simulate")
@@ -580,8 +592,10 @@ def api_simulate():
             },
         )
         return jsonify({"ok": True, "result": result})
-    except (InputError, ValueError) as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 400
+    except InputError:
+        return jsonify({"ok": False, "error": "输入不合法，请检查格式与范围。"}), 400
+    except ValueError:
+        return jsonify({"ok": False, "error": "参数格式错误。"}), 400
 
 
 @app.post("/api/assemble")
@@ -598,8 +612,10 @@ def api_assemble():
             },
         )
         return jsonify({"ok": True, "result": result})
-    except (InputError, ValueError) as exc:
-        return jsonify({"ok": False, "error": str(exc)}), 400
+    except InputError:
+        return jsonify({"ok": False, "error": "输入不合法，请检查指令语法、寄存器与地址范围。"}), 400
+    except ValueError:
+        return jsonify({"ok": False, "error": "参数格式错误。"}), 400
 
 
 @app.get("/api/history")
@@ -631,4 +647,4 @@ def api_stats():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=os.getenv("FLASK_DEBUG", "").lower() in {"1", "true", "yes"})
