@@ -20,8 +20,9 @@
       <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
       <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
       <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
-      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 第6章 指令系统汇编</a>
+      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 指令汇编系统</a>
       <a href="{{ url_for('merge_sort_page') }}" class="nav-item {% if page == 'merge_sort' %}active{% endif %}">⑦ 多进制归并排序</a>
+      <a href="{{ url_for('cpu_sim_page') }}" class="nav-item {% if page == 'cpu_sim' %}active{% endif %}">⑧ 模型机CPU仿真</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -52,10 +53,11 @@
         <a href="{{ url_for('converter_page') }}">工作台</a>
         <a href="{{ url_for('arithmetic_page') }}">运算模块</a>
         <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
-        <a href="{{ url_for('admin_page') }}">后台管理</a>
-        <a href="{{ url_for('guide_page') }}">操作指南</a>
-        <a href="{{ url_for('instruction_page') }}">指令系统</a>
-        <a href="{{ url_for('merge_sort_page') }}">归并排序</a>
+        <a href="{{ url_for('admin_page') }}">后台管理概览</a>
+        <a href="{{ url_for('guide_page') }}">实验操作指南</a>
+        <a href="{{ url_for('instruction_page') }}">指令汇编系统</a>
+        <a href="{{ url_for('merge_sort_page') }}">多进制归并排序</a>
+        <a href="{{ url_for('cpu_sim_page') }}">模型机CPU仿真</a>
       </nav>
 
       {% if page == 'converter' %}
@@ -235,7 +237,7 @@
       {% elif page == 'instruction' %}
       <section class="workspace card page-card">
         <article id="instruction-panel" class="panel page-panel">
-          <h3>第6章：中央处理器指令系统（16位）</h3>
+          <h3>指令汇编系统</h3>
           <p>将课本风格汇编语句翻译为 16 位机器码，为后续模型机实现打基础。</p>
           <p>支持指令：NOP, MOV, ADD, SUB, AND, OR, XOR, NOT, LDI, LD, ST, JMP, JZ, JNZ, HALT（寄存器 R0~R3，支持标签）。</p>
           <label>汇编源码
@@ -267,9 +269,26 @@
           <div id="merge-steps" class="merge-steps"></div>
         </article>
       </section>
+
+      {% elif page == 'cpu_sim' %}
+      <section class="workspace card page-card cpu-page-card">
+        <article class="panel page-panel cpu-sim-layout">
+          <h3>模型机CPU仿真</h3>
+          <div class="cpu-grid">
+            <section class="cpu-card"><h4>寄存器组展示区</h4><div id="cpu-registers" class="cpu-registers"></div></section>
+            <section class="cpu-card"><h4>指令操作与转换区</h4><label>汇编指令输入<textarea id="cpu-asm-input" class="asm-input" placeholder="DATA: 9,4,7,1
+LOAD R0, [0]
+..."></textarea></label><div class="btn-row"><input id="cpu-file" type="file" accept=".asm,.txt" /><button id="cpu-parse-btn" class="btn">转换并加载</button></div><pre id="cpu-machine" class="result"></pre></section>
+            <section class="cpu-card"><h4>存储单元与微指令记录区</h4><div id="cpu-memory" class="cpu-memory"></div><div id="cpu-micro" class="merge-steps"></div></section>
+            <section class="cpu-card"><h4>可视化展示区</h4><div id="cpu-pipeline" class="cpu-pipeline"></div><div id="cpu-arch" class="cpu-arch"></div></section>
+          </div>
+          <div class="btn-row cpu-controls"><button id="cpu-step-btn" class="btn">单周期执行</button><button id="cpu-auto-btn" class="btn">自动连续执行</button><button id="cpu-stop-btn" class="btn">停止自执行</button><button id="cpu-reset-btn" class="btn">重置</button></div>
+        </article>
+      </section>
       {% endif %}
     </main>
 
+    {% if page != 'cpu_sim' %}
     <aside class="right-rail">
       <section id="history-panel" class="history card">
         <h2>历史记录</h2>
@@ -281,6 +300,7 @@
         <canvas id="stats-chart"></canvas>
       </section>
     </aside>
+    {% endif %}
   </div>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>

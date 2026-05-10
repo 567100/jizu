@@ -512,3 +512,12 @@ textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103
 @media (max-width: 900px) {
   .sim-legend { grid-template-columns: 1fr; }
 }
+
+.cpu-page-card { min-height: calc(100vh - 90px); }
+.cpu-sim-layout h3 { margin-top: 0; }
+.cpu-grid { display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+.cpu-card { background:#f8faff; border:1px solid #dce4ff; border-radius:12px; padding:10px; }
+.cpu-registers { display:flex; flex-wrap:wrap; gap:8px; }
+.cpu-memory p,.cpu-pipeline p,.cpu-arch p { margin:6px 0; color:#36508a; }
+.cpu-controls { margin-top: 12px; flex-wrap:wrap; }
+@media (max-width: 900px) { .cpu-grid { grid-template-columns:1fr; } }
