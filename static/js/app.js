@@ -413,6 +413,7 @@ Promise.all([refreshHistory(), refreshStats()]).catch((err) => {
 });
 
 function initCpuSimPage() {
+
   const loadAsmBtn = byId("cpu-load-asm");
   if (!loadAsmBtn) return;
   const asmFile = byId("cpu-asm-file");
@@ -472,6 +473,7 @@ function initCpuSimPage() {
   byId('cpu-auto-btn')?.addEventListener('click', ()=>{ if (state.timer) return; state.timer = setInterval(step, 800); });
   byId('cpu-stop-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} });
   byId('cpu-reset-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} state.g={R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0}; state.s={PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0}; state.mem=[]; state.ins=[]; state.ip=0; asmInput.value=''; machineBox.textContent=''; logBox.innerHTML=''; render();});
+
   render();
 }
 
