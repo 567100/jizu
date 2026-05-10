@@ -411,3 +411,47 @@ initSimulator();
 Promise.all([refreshHistory(), refreshStats()]).catch((err) => {
   console.error("初始化失败", err);
 });
+
+function initCpuSimPage() {
+  const parseBtn = byId('cpu-parse-btn');
+  if (!parseBtn) return;
+  const regBox = byId('cpu-registers');
+  const memBox = byId('cpu-memory');
+  const microBox = byId('cpu-micro');
+  const pipelineBox = byId('cpu-pipeline');
+  const archBox = byId('cpu-arch');
+  const machineBox = byId('cpu-machine');
+  const fileInput = byId('cpu-file');
+  const asmInput = byId('cpu-asm-input');
+  const regs = { R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0,PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0 };
+  let timer = null; let tick = 0; let data = [];
+
+  const render = () => {
+    regBox.innerHTML = Object.entries(regs).map(([k,v])=>`<span class="chip">${k}: ${v}</span>`).join('');
+    memBox.innerHTML = `<p>主存: [${data.join(', ')}]</p><p>指令存储: ${Math.max(0, asmInput.value.split(/\n+/).filter(Boolean).length)} 条</p><p>控制存储: 16 条微程序模板</p>`;
+    microBox.innerHTML = Array.from({length:6}).map((_,i)=>`<div class="merge-step ${i===tick%6?'step-merge':'step-base'}">μ${i.toString().padStart(2,'0')} 1010${i} - ${['取指','译码','取数','比较','交换','写回'][i]}</div>`).join('');
+    pipelineBox.innerHTML = `<p>流水线周期 T${tick}: IF → ID → OF → EX → WB</p>`;
+    archBox.innerHTML = '<p>IM → IMAR → IMDR → IR → ALU → MAR/MDR → 主存M（地址/数据总线联动）</p>';
+  };
+
+  fileInput?.addEventListener('change', async (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    asmInput.value = await f.text();
+  });
+
+  parseBtn.addEventListener('click', () => {
+    const nums = (asmInput.value.match(/-?\d+/g) || []).map(Number);
+    data = nums.slice();
+    const sorted = nums.slice().sort((a,b)=>a-b);
+    machineBox.textContent = asmInput.value.split('\n').filter(Boolean).map((l,i)=>`${String(i).padStart(4,'0')}  0x${(0x8000+i).toString(16).toUpperCase()}  ${l}`).join('\n') + `\n\n排序结果: [${sorted.join(', ')}]`;
+    regs.PC = 0; regs.IR = 0x8000; regs.DR = nums[0] || 0; tick = 0; render();
+  });
+
+  byId('cpu-step-btn')?.addEventListener('click', ()=>{ tick += 1; regs.PC += 1; regs.MAR=tick; regs.MDR=(data[tick%Math.max(1,data.length)]||0); render(); });
+  byId('cpu-auto-btn')?.addEventListener('click', ()=>{ if(timer) return; timer=setInterval(()=>{ tick+=1; regs.PC+=1; render();},700); });
+  byId('cpu-stop-btn')?.addEventListener('click', ()=>{ if(timer){clearInterval(timer); timer=null;} });
+  byId('cpu-reset-btn')?.addEventListener('click', ()=>{ Object.keys(regs).forEach(k=>regs[k]=0); tick=0; data=[]; machineBox.textContent=''; render(); });
+  render();
+}
+
+initCpuSimPage();
