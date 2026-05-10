@@ -281,31 +281,179 @@
           <div class="cpu-grid">
 
             <section class="cpu-card"><h4>寄存器展示区域</h4><div class="btn-row"><select id="cpu-reg-preset"><option value="all">显示全部寄存器</option><option value="general">仅通用寄存器</option><option value="special">仅专用寄存器</option></select></div><div id="cpu-registers-general" class="cpu-registers reg-grid"></div><div id="cpu-registers-special" class="cpu-registers reg-grid"></div></section>
-            <section class="cpu-card"><h4>指令导入与机器码</h4><div class="btn-row"><input id="cpu-asm-file" type="file" accept=".asm,.txt" /><button id="cpu-load-asm" class="btn">导入汇编文件</button></div><textarea id="cpu-asm-input" class="asm-input" placeholder="输入或导入汇编">LDI R7, 1
-LDI R6, 8
+            <section class="cpu-card"><h4>指令导入与机器码</h4><div class="btn-row"><input id="cpu-asm-file" type="file" accept=".asm,.txt" /><button id="cpu-load-asm" class="btn">导入汇编文件</button></div><textarea id="cpu-asm-input" class="asm-input cpu-scroll-block" placeholder="输入或导入汇编">LDI R7, 1
 LDI R0, 0
-
-OUTER: LDI R1, 0
-
-INNER: ADD R3, R1, R7
-LD R2, [R1]
-LD R4, [R3]
-CMP R5, R2, R4
-JGT R5, DO_SWAP
-
-NEXT: ADD R1, R1, R7
-SUB R5, R6, R0
-CMP R5, R1, R5
-JLT R5, INNER
-
-ADD R0, R0, R7
-CMP R5, R0, R6
-JLT R5, OUTER
+LDI R1, 1
+PAIR01: LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW01
+NEXT01: LDI R0, 2
+LDI R1, 3
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW23
+NEXT23: LDI R0, 4
+LDI R1, 5
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW45
+NEXT45: LDI R0, 6
+LDI R1, 7
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW67
+NEXT67: LDI R0, 0
+LDI R1, 2
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW02
+NEXT02: LDI R0, 1
+LDI R1, 3
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW13
+NEXT13: LDI R0, 4
+LDI R1, 6
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW46
+NEXT46: LDI R0, 5
+LDI R1, 7
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW57
+NEXT57: LDI R0, 1
+LDI R1, 2
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW12
+NEXT12: LDI R0, 5
+LDI R1, 6
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW56
+NEXT56: LDI R0, 0
+LDI R1, 4
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW04
+NEXT04: LDI R0, 1
+LDI R1, 5
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW15
+NEXT15: LDI R0, 2
+LDI R1, 6
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW26
+NEXT26: LDI R0, 3
+LDI R1, 7
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW37
+NEXT37: LDI R0, 2
+LDI R1, 4
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW24
+NEXT24: LDI R0, 3
+LDI R1, 5
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW35
+NEXT35: LDI R0, 1
+LDI R1, 2
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW12B
+NEXT12B: LDI R0, 3
+LDI R1, 4
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW34
+NEXT34: LDI R0, 5
+LDI R1, 6
+LD R2, [R0]
+LD R3, [R1]
+CMP R4, R2, R3
+JGT R4, SW56B
 HALT
-
-DO_SWAP: ST R4, [R1]
-ST R2, [R3]
-JMP NEXT</textarea><pre id="cpu-machine" class="result"></pre></section>
+SW01: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT01
+SW23: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT23
+SW45: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT45
+SW67: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT67
+SW02: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT02
+SW13: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT13
+SW46: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT46
+SW57: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT57
+SW12: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT12
+SW56: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT56
+SW04: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT04
+SW15: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT15
+SW26: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT26
+SW37: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT37
+SW24: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT24
+SW35: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT35
+SW12B: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT12B
+SW34: ST R3, [R0]
+ST R2, [R1]
+JMP NEXT34
+SW56B: ST R3, [R0]
+ST R2, [R1]
+HALT</textarea><pre id="cpu-machine" class="result cpu-scroll-block"></pre></section>
 
             <section class="cpu-card"><h4>主存数据与执行轨迹</h4><div class="btn-row"><input id="cpu-mem-file" type="file" accept=".txt,.csv" /><button id="cpu-load-mem" class="btn">导入主存数据</button></div><textarea id="cpu-mem-input" class="asm-input" style="min-height:90px;">9,4,7,1,3,8,2,6,5</textarea><pre id="cpu-memory" class="result"></pre><pre id="cpu-sort-result" class="result"></pre><div id="cpu-exec-log" class="merge-steps"></div></section>
             <section class="cpu-card"><h4>模型机结构原理图</h4><svg class="cpu-diagram" viewBox="0 0 760 320"><rect x="20" y="20" width="80" height="36"/><text x="40" y="43">PC</text><rect x="120" y="20" width="80" height="36"/><text x="136" y="43">IMAR</text><rect x="220" y="20" width="80" height="36"/><text x="236" y="43">IMDR</text><rect x="320" y="20" width="80" height="36"/><text x="350" y="43">IR</text><rect x="420" y="20" width="120" height="36"/><text x="438" y="43">通用寄存器组</text><rect x="560" y="20" width="70" height="36"/><text x="582" y="43">ALU</text><rect x="650" y="20" width="80" height="36"/><text x="676" y="43">SR</text><rect x="200" y="110" width="70" height="36"/><text x="223" y="133">MAR</text><rect x="290" y="110" width="70" height="36"/><text x="313" y="133">MDR</text><rect x="380" y="110" width="70" height="36"/><text x="407" y="133">DR</text><rect x="470" y="110" width="70" height="36"/><text x="496" y="133">PSW</text><rect x="570" y="110" width="160" height="36"/><text x="610" y="133">主存 M</text><line x1="100" y1="38" x2="120" y2="38"/><line x1="200" y1="38" x2="220" y2="38"/><line x1="300" y1="38" x2="320" y2="38"/><line x1="400" y1="38" x2="420" y2="38"/><line x1="540" y1="38" x2="560" y2="38"/><line x1="630" y1="38" x2="650" y2="38"/><line x1="260" y1="56" x2="260" y2="110"/><line x1="325" y1="56" x2="325" y2="110"/><line x1="415" y1="56" x2="415" y2="110"/><line x1="505" y1="56" x2="505" y2="110"/><line x1="650" y1="56" x2="650" y2="110"/><text x="40" y="178">地址总线</text><text x="180" y="178">数据总线</text><text x="320" y="178">控制总线</text></svg><div id="cpu-pipeline" class="chip-row"></div><div class="cpu-note">执行说明：<br>1) 单步执行用于观察每个时钟周期的寄存器/主存变化。<br>2) 自动运行会持续推进排序流程，排序完成后自动停止。<br>3) 右侧结构图中的总线路径与当前执行日志相互对应，便于教学演示。</div></section>

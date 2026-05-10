@@ -543,6 +543,12 @@ body[data-page="cpu_sim"] .app-layout { grid-template-columns: 260px minmax(980p
   line-height: 1.5;
 }
 
+.cpu-scroll-block {
+  height: 280px;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
 .cpu-diagram { width: 100%; min-height: 180px; border: 1px solid #d6e0ff; border-radius: 10px; background: #fff; }
 .cpu-diagram rect,.cpu-diagram line { stroke: #3d60b1; fill: #eef3ff; stroke-width: 2; }
 .cpu-diagram text { fill: #29417f; font-size: 14px; font-family: "Segoe UI", "PingFang SC", sans-serif; }
