@@ -18,11 +18,13 @@
       <a href="{{ url_for('converter_page') }}" class="nav-item {% if page == 'converter' %}active{% endif %}">① 数字转换与编码</a>
       <a href="{{ url_for('arithmetic_page') }}" class="nav-item {% if page == 'arithmetic' %}active{% endif %}">② 加减法与溢出判断</a>
       <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
+
       <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
       <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
       <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 指令汇编系统</a>
       <a href="{{ url_for('merge_sort_page') }}" class="nav-item {% if page == 'merge_sort' %}active{% endif %}">⑦ 多进制归并排序</a>
       <a href="{{ url_for('cpu_sim_page') }}" class="nav-item {% if page == 'cpu_sim' %}active{% endif %}">⑧ 模型机CPU仿真</a>
+
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -53,11 +55,13 @@
         <a href="{{ url_for('converter_page') }}">工作台</a>
         <a href="{{ url_for('arithmetic_page') }}">运算模块</a>
         <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
+
         <a href="{{ url_for('admin_page') }}">后台管理概览</a>
         <a href="{{ url_for('guide_page') }}">实验操作指南</a>
         <a href="{{ url_for('instruction_page') }}">指令汇编系统</a>
         <a href="{{ url_for('merge_sort_page') }}">多进制归并排序</a>
         <a href="{{ url_for('cpu_sim_page') }}">模型机CPU仿真</a>
+
       </nav>
 
       {% if page == 'converter' %}
