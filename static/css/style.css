@@ -522,15 +522,19 @@ textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103
 .cpu-controls { margin-top: 12px; flex-wrap:wrap; }
 @media (max-width: 900px) { .cpu-grid { grid-template-columns:1fr; } }
 
+
 body[data-page="cpu_sim"] .app-layout { grid-template-columns: 260px minmax(980px, 1fr); }
 .cpu-page-card { min-height: calc(100vh - 96px); }
 .cpu-grid { display: grid; grid-template-columns: 1.1fr 1.4fr; gap: 12px; }
 .cpu-card { background: #f8faff; border: 1px solid #dce4ff; border-radius: 12px; padding: 10px; }
 .cpu-registers { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
 .reg-grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 8px; }
 .reg-item { display: grid; gap: 4px; font-size: .85rem; background: #eef3ff; border: 1px solid #d6e0ff; border-radius: 8px; padding: 6px; }
 .reg-item input { padding: 6px; border-radius: 6px; border: 1px solid #cfd9fb; }
+
 .cpu-diagram { width: 100%; min-height: 180px; border: 1px solid #d6e0ff; border-radius: 10px; background: #fff; }
 .cpu-diagram rect,.cpu-diagram line { stroke: #3d60b1; fill: #eef3ff; stroke-width: 2; }
 .cpu-diagram text { fill: #29417f; font-size: 14px; font-family: "Segoe UI", "PingFang SC", sans-serif; }
 @media (max-width: 1180px) { body[data-page="cpu_sim"] .app-layout { grid-template-columns: 1fr; } .cpu-grid { grid-template-columns: 1fr; } }
+
