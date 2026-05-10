@@ -18,10 +18,11 @@
       <a href="{{ url_for('converter_page') }}" class="nav-item {% if page == 'converter' %}active{% endif %}">① 数字转换与编码</a>
       <a href="{{ url_for('arithmetic_page') }}" class="nav-item {% if page == 'arithmetic' %}active{% endif %}">② 加减法与溢出判断</a>
       <a href="{{ url_for('simulator_page') }}" class="nav-item {% if page == 'simulator' %}active{% endif %}">③ 8 功能运算器仿真</a>
-      <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
-      <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
-      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 第6章 指令系统汇编</a>
-      <a href="{{ url_for('merge_sort_page') }}" class="nav-item {% if page == 'merge_sort' %}active{% endif %}">⑦ 多进制归并排序</a>
+      <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">④ 指令汇编系统</a>
+      <a href="{{ url_for('merge_sort_page') }}" class="nav-item {% if page == 'merge_sort' %}active{% endif %}">⑤ 多进制归并排序</a>
+      <a href="{{ url_for('cpu_sim_page') }}" class="nav-item {% if page == 'cpu_sim' %}active{% endif %}">⑥ 模型机CPU仿真</a>
+      <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">⑦ 后台管理概览</a>
+      <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑧ 实验操作指南</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -52,10 +53,11 @@
         <a href="{{ url_for('converter_page') }}">工作台</a>
         <a href="{{ url_for('arithmetic_page') }}">运算模块</a>
         <a href="{{ url_for('simulator_page') }}">8 功能仿真</a>
-        <a href="{{ url_for('admin_page') }}">后台管理</a>
-        <a href="{{ url_for('guide_page') }}">操作指南</a>
-        <a href="{{ url_for('instruction_page') }}">指令系统</a>
-        <a href="{{ url_for('merge_sort_page') }}">归并排序</a>
+        <a href="{{ url_for('instruction_page') }}">指令汇编系统</a>
+        <a href="{{ url_for('merge_sort_page') }}">多进制归并排序</a>
+        <a href="{{ url_for('cpu_sim_page') }}">模型机CPU仿真</a>
+        <a href="{{ url_for('admin_page') }}">后台管理概览</a>
+        <a href="{{ url_for('guide_page') }}">实验操作指南</a>
       </nav>
 
       {% if page == 'converter' %}
@@ -235,7 +237,7 @@
       {% elif page == 'instruction' %}
       <section class="workspace card page-card">
         <article id="instruction-panel" class="panel page-panel">
-          <h3>第6章：中央处理器指令系统（16位）</h3>
+          <h3>指令汇编系统</h3>
           <p>将课本风格汇编语句翻译为 16 位机器码，为后续模型机实现打基础。</p>
           <p>支持指令：NOP, MOV, ADD, SUB, AND, OR, XOR, NOT, LDI, LD, ST, JMP, JZ, JNZ, HALT（寄存器 R0~R3，支持标签）。</p>
           <label>汇编源码
@@ -267,9 +269,43 @@
           <div id="merge-steps" class="merge-steps"></div>
         </article>
       </section>
+
+      {% elif page == 'cpu_sim' %}
+      <section class="workspace card page-card cpu-page-card">
+        <article class="panel page-panel cpu-sim-layout">
+          <h3>模型机CPU仿真</h3>
+          <div class="cpu-grid">
+            <section class="cpu-card"><h4>寄存器展示区域</h4><div class="btn-row"><select id="cpu-reg-preset"><option value="all">显示全部寄存器</option><option value="general">仅通用寄存器</option><option value="special">仅专用寄存器</option></select></div><div id="cpu-registers-general" class="cpu-registers reg-grid"></div><div id="cpu-registers-special" class="cpu-registers reg-grid"></div></section>
+            <section class="cpu-card"><h4>指令导入与机器码</h4><div class="btn-row"><input id="cpu-asm-file" type="file" accept=".asm,.txt" /><button id="cpu-load-asm" class="btn">导入汇编文件</button></div><textarea id="cpu-asm-input" class="asm-input" placeholder="输入或导入汇编">LDI R7, 1
+LDI R6, 8
+LDI R0, 0
+OUTER: LDI R1, 0
+INNER: ADD R3, R1, R7
+LD R2, [R1]
+LD R4, [R3]
+CMP R5, R2, R4
+JGT R5, DO_SWAP
+NEXT: ADD R1, R1, R7
+SUB R5, R6, R0
+CMP R5, R1, R5
+JLT R5, INNER
+ADD R0, R0, R7
+CMP R5, R0, R6
+JLT R5, OUTER
+HALT
+DO_SWAP: ST R4, [R1]
+ST R2, [R3]
+JMP NEXT</textarea><pre id="cpu-machine" class="result"></pre></section>
+            <section class="cpu-card"><h4>主存数据与执行轨迹</h4><div class="btn-row"><input id="cpu-mem-file" type="file" accept=".txt,.csv" /><button id="cpu-load-mem" class="btn">导入主存数据</button></div><textarea id="cpu-mem-input" class="asm-input" style="min-height:90px;">9,4,7,1,3,8,2,6,5</textarea><pre id="cpu-memory" class="result"></pre><pre id="cpu-sort-result" class="result"></pre><div id="cpu-exec-log" class="merge-steps"></div></section>
+            <section class="cpu-card"><h4>模型机结构原理图</h4><svg class="cpu-diagram" viewBox="0 0 760 320"><rect x="20" y="20" width="80" height="36"/><text x="40" y="43">PC</text><rect x="120" y="20" width="80" height="36"/><text x="136" y="43">IMAR</text><rect x="220" y="20" width="80" height="36"/><text x="236" y="43">IMDR</text><rect x="320" y="20" width="80" height="36"/><text x="350" y="43">IR</text><rect x="420" y="20" width="120" height="36"/><text x="438" y="43">通用寄存器组</text><rect x="560" y="20" width="70" height="36"/><text x="582" y="43">ALU</text><rect x="650" y="20" width="80" height="36"/><text x="676" y="43">SR</text><rect x="200" y="110" width="70" height="36"/><text x="223" y="133">MAR</text><rect x="290" y="110" width="70" height="36"/><text x="313" y="133">MDR</text><rect x="380" y="110" width="70" height="36"/><text x="407" y="133">DR</text><rect x="470" y="110" width="70" height="36"/><text x="496" y="133">PSW</text><rect x="570" y="110" width="160" height="36"/><text x="610" y="133">主存 M</text><line x1="100" y1="38" x2="120" y2="38"/><line x1="200" y1="38" x2="220" y2="38"/><line x1="300" y1="38" x2="320" y2="38"/><line x1="400" y1="38" x2="420" y2="38"/><line x1="540" y1="38" x2="560" y2="38"/><line x1="630" y1="38" x2="650" y2="38"/><line x1="260" y1="56" x2="260" y2="110"/><line x1="325" y1="56" x2="325" y2="110"/><line x1="415" y1="56" x2="415" y2="110"/><line x1="505" y1="56" x2="505" y2="110"/><line x1="650" y1="56" x2="650" y2="110"/><text x="40" y="178">地址总线</text><text x="180" y="178">数据总线</text><text x="320" y="178">控制总线</text></svg><div id="cpu-pipeline" class="chip-row"></div><div class="cpu-note">执行说明：<br>1) 单步执行用于观察每个时钟周期的寄存器/主存变化。<br>2) 自动运行会持续推进排序流程，排序完成后自动停止。<br>3) 右侧结构图中的总线路径与当前执行日志相互对应，便于教学演示。</div></section>
+          </div>
+          <div class="btn-row cpu-controls"><button id="cpu-step-btn" class="btn">单步执行</button><button id="cpu-auto-btn" class="btn">自动运行</button><button id="cpu-stop-btn" class="btn">停止</button><button id="cpu-reset-btn" class="btn">重置全部状态</button></div>
+        </article>
+      </section>
       {% endif %}
     </main>
 
+    {% if page != 'cpu_sim' %}
     <aside class="right-rail">
       <section id="history-panel" class="history card">
         <h2>历史记录</h2>
@@ -281,6 +317,7 @@
         <canvas id="stats-chart"></canvas>
       </section>
     </aside>
+    {% endif %}
   </div>
 
   <script src="{{ url_for('static', filename='js/app.js') }}"></script>
