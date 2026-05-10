@@ -411,3 +411,68 @@ initSimulator();
 Promise.all([refreshHistory(), refreshStats()]).catch((err) => {
   console.error("初始化失败", err);
 });
+
+function initCpuSimPage() {
+  const loadAsmBtn = byId("cpu-load-asm");
+  if (!loadAsmBtn) return;
+  const asmFile = byId("cpu-asm-file");
+  const memFile = byId("cpu-mem-file");
+  const asmInput = byId("cpu-asm-input");
+  const machineBox = byId("cpu-machine");
+  const memoryBox = byId("cpu-memory");
+  const logBox = byId("cpu-exec-log");
+  const pipelineBox = byId("cpu-pipeline");
+  const regGeneral = byId("cpu-registers-general");
+  const regSpecial = byId("cpu-registers-special");
+
+  const state = {
+    g: {R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0},
+    s: {PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0},
+    mem: [], ins: [], timer: null, ip: 0,
+  };
+
+  const render = () => {
+    regGeneral.innerHTML = '<h5>通用寄存器组</h5>' + Object.entries(state.g).map(([k,v]) => `<span class="chip">${k}: ${v}</span>`).join('');
+    regSpecial.innerHTML = '<h5>专用寄存器组</h5>' + Object.entries(state.s).map(([k,v]) => `<span class="chip">${k}: ${v}</span>`).join('');
+    memoryBox.textContent = state.mem.map((v,i)=>`[${String(i).padStart(3,'0')}] = ${v}`).join('\n') || '主存为空';
+    pipelineBox.innerHTML = ["IF取指","ID译码","OF取数","EX执行","WB回写"].map((x,i)=>`<span class="chip">T${i}: ${x}</span>`).join('');
+  };
+
+  const loadAsm = () => {
+    state.ins = asmInput.value.split(/\n+/).map(s=>s.trim()).filter(Boolean);
+    machineBox.textContent = state.ins.map((line,i)=>`${String(i).padStart(4,'0')} | ${line} | 0x${(0x8000+i).toString(16).toUpperCase()}`).join('\n');
+    state.ip = 0; state.s.PC = 0; render();
+  };
+
+  const step = () => {
+    if (!state.ins.length) return;
+    const line = state.ins[state.ip % state.ins.length];
+    const a = state.ip % Math.max(1, state.mem.length);
+    state.s.IR = 0x8000 + state.ip; state.s.PC = state.ip; state.s.MAR = a; state.s.MDR = state.mem[a] || 0; state.s.DR = state.s.MDR;
+    state.g.R0 = (state.g.R0 + 1) & 0xFFFF;
+    if (/SORT|CMP|SWAP|MOV/i.test(line) && state.mem.length > 1) {
+      const j = (a + 1) % state.mem.length;
+      if (state.mem[a] > state.mem[j]) [state.mem[a], state.mem[j]] = [state.mem[j], state.mem[a]];
+    }
+    const item = document.createElement('div'); item.className = 'merge-step step-merge'; item.textContent = `#${state.ip+1} ${line} | PC=${state.s.PC} MAR=${state.s.MAR} MDR=${state.s.MDR}`;
+    logBox.prepend(item);
+    state.ip += 1; render();
+  };
+
+  loadAsmBtn.addEventListener('click', async () => {
+    if (asmFile?.files?.[0]) asmInput.value = await asmFile.files[0].text();
+    loadAsm();
+  });
+  byId('cpu-load-mem')?.addEventListener('click', async () => {
+    const text = memFile?.files?.[0] ? await memFile.files[0].text() : '';
+    state.mem = (text.match(/-?\d+/g) || []).map(Number);
+    render();
+  });
+  byId('cpu-step-btn')?.addEventListener('click', step);
+  byId('cpu-auto-btn')?.addEventListener('click', ()=>{ if (state.timer) return; state.timer = setInterval(step, 800); });
+  byId('cpu-stop-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} });
+  byId('cpu-reset-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} state.g={R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0}; state.s={PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0}; state.mem=[]; state.ins=[]; state.ip=0; asmInput.value=''; machineBox.textContent=''; logBox.innerHTML=''; render();});
+  render();
+}
+
+initCpuSimPage();
