@@ -529,8 +529,8 @@ body[data-page="cpu_sim"] .app-layout { grid-template-columns: 260px minmax(980p
 .cpu-card { background: #f8faff; border: 1px solid #dce4ff; border-radius: 12px; padding: 10px; }
 .cpu-registers { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 
-.reg-grid { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); gap: 8px; }
-.reg-item { display: grid; gap: 4px; font-size: .85rem; background: #eef3ff; border: 1px solid #d6e0ff; border-radius: 8px; padding: 6px; }
+.reg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: 100%; }
+.reg-item { display: grid; gap: 4px; font-size: .85rem; background: #eef3ff; border: 1px solid #d6e0ff; border-radius: 8px; padding: 6px; min-width: 0; }
 .reg-item input { padding: 6px; border-radius: 6px; border: 1px solid #cfd9fb; }
 
 .cpu-diagram { width: 100%; min-height: 180px; border: 1px solid #d6e0ff; border-radius: 10px; background: #fff; }
