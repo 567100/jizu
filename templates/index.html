@@ -21,6 +21,7 @@
       <a href="{{ url_for('admin_page') }}" class="nav-item {% if page == 'admin' %}active{% endif %}">④ 后台管理概览</a>
       <a href="{{ url_for('guide_page') }}" class="nav-item {% if page == 'guide' %}active{% endif %}">⑤ 实验操作指南</a>
       <a href="{{ url_for('instruction_page') }}" class="nav-item {% if page == 'instruction' %}active{% endif %}">⑥ 第6章 指令系统汇编</a>
+      <a href="{{ url_for('merge_sort_page') }}" class="nav-item {% if page == 'merge_sort' %}active{% endif %}">⑦ 多进制归并排序</a>
 
       <div class="sidebar-widget">
         <h4>实验建议</h4>
@@ -54,6 +55,7 @@
         <a href="{{ url_for('admin_page') }}">后台管理</a>
         <a href="{{ url_for('guide_page') }}">操作指南</a>
         <a href="{{ url_for('instruction_page') }}">指令系统</a>
+        <a href="{{ url_for('merge_sort_page') }}">归并排序</a>
       </nav>
 
       {% if page == 'converter' %}
@@ -241,6 +243,28 @@
           </label>
           <button id="assemble-btn" class="btn">汇编生成机器码</button>
           <pre id="asm-result" class="result"></pre>
+        </article>
+      </section>
+      {% elif page == 'merge_sort' %}
+      <section class="workspace card page-card">
+        <article id="merge-sort-panel" class="panel page-panel">
+          <h3>多进制归并排序可视化</h3>
+          <p>输入一组数据，选择进制后按步骤展示拆分与归并全过程，并输出最终有序序列。</p>
+          <div class="grid two-col">
+            <label>待排序数据（逗号分隔）
+              <textarea id="merge-input" class="asm-input" aria-label="归并排序输入区" placeholder="例如：31, 12, 7, 19, 0, -5"></textarea>
+            </label>
+            <div class="merge-controls">
+              <label>输入进制
+                <select id="merge-base">
+                  <option value="2">二进制</option><option value="8">八进制</option><option value="10" selected>十进制</option><option value="16">十六进制</option>
+                </select>
+              </label>
+              <button id="merge-sort-btn" class="btn">执行归并排序</button>
+            </div>
+          </div>
+          <pre id="merge-result" class="result"></pre>
+          <div id="merge-steps" class="merge-steps"></div>
         </article>
       </section>
       {% endif %}
