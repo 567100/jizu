@@ -484,6 +484,31 @@ textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(74,103
   resize: vertical;
 }
 
+.merge-controls {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.merge-steps {
+  margin-top: 10px;
+  max-height: 320px;
+  overflow-y: auto;
+  display: grid;
+  gap: 8px;
+}
+
+.merge-step {
+  padding: 8px 10px;
+  border-radius: 9px;
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.86rem;
+}
+
+.step-split { background: #eef3ff; border-left: 4px solid #4a67ff; }
+.step-merge { background: #e9f8f7; border-left: 4px solid #00a9b7; }
+.step-base { background: #f5f5fb; border-left: 4px solid #9394b8; }
+
 @media (max-width: 900px) {
   .sim-legend { grid-template-columns: 1fr; }
 }

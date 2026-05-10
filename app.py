@@ -442,6 +442,43 @@ def simulate_alu8(a: int, b: int, func: int, width: int, cin: int, phase: int) -
     }
 
 
+def merge_sort_trace(values: List[int]) -> Dict:
+    if not values:
+        raise InputError("待排序数据不能为空。")
+    if len(values) > 64:
+        raise InputError("单次最多支持 64 个数据，以保证可视化清晰。")
+
+    steps: List[Dict] = []
+
+    def walk(arr: List[int], depth: int) -> List[int]:
+        if len(arr) <= 1:
+            steps.append({"phase": "base", "depth": depth, "segment": arr[:]})
+            return arr[:]
+        mid = len(arr) // 2
+        left = arr[:mid]
+        right = arr[mid:]
+        steps.append({"phase": "split", "depth": depth, "source": arr[:], "left": left[:], "right": right[:]})
+        left_sorted = walk(left, depth + 1)
+        right_sorted = walk(right, depth + 1)
+
+        merged: List[int] = []
+        i, j = 0, 0
+        while i < len(left_sorted) and j < len(right_sorted):
+            if left_sorted[i] <= right_sorted[j]:
+                merged.append(left_sorted[i])
+                i += 1
+            else:
+                merged.append(right_sorted[j])
+                j += 1
+        merged.extend(left_sorted[i:])
+        merged.extend(right_sorted[j:])
+        steps.append({"phase": "merge", "depth": depth, "left": left_sorted[:], "right": right_sorted[:], "result": merged[:]})
+        return merged
+
+    sorted_values = walk(values[:], 0)
+    return {"input": values, "steps": steps, "sorted": sorted_values}
+
+
 def add_history(item_type: str, payload: Dict) -> None:
     history.appendleft(
         {
@@ -485,6 +522,11 @@ def guide_page():
 @app.route("/instruction")
 def instruction_page():
     return render_template("index.html", page="instruction")
+
+
+@app.route("/merge-sort")
+def merge_sort_page():
+    return render_template("index.html", page="merge_sort")
 
 
 @app.post("/api/convert")
@@ -618,6 +660,33 @@ def api_assemble():
         return jsonify({"ok": False, "error": "参数格式错误。"}), 400
 
 
+@app.post("/api/merge-sort")
+def api_merge_sort():
+    data = request.get_json(silent=True) or {}
+    try:
+        base = int(data.get("base", 10))
+        if base not in {2, 8, 10, 16}:
+            raise InputError("仅支持二/八/十/十六进制输入。")
+        raw_items = data.get("items", [])
+        if not isinstance(raw_items, list):
+            raise InputError("待排序数据格式错误。")
+        values = [parse_number(str(item), base) for item in raw_items]
+        result = merge_sort_trace(values)
+        add_history(
+            "merge_sort",
+            {
+                "label": f"归并排序: {len(values)} 项（{base}进制）",
+                "detail": f"结果首项={result['sorted'][0]}，末项={result['sorted'][-1]}",
+                "base": base,
+            },
+        )
+        return jsonify({"ok": True, "result": result})
+    except InputError:
+        return jsonify({"ok": False, "error": "输入不合法，请检查进制与数据格式。"}), 400
+    except ValueError:
+        return jsonify({"ok": False, "error": "参数格式错误。"}), 400
+
+
 @app.get("/api/history")
 def api_history():
     return jsonify({"ok": True, "items": list(history)})
@@ -632,6 +701,8 @@ def api_stats():
         if item["type"] == "convert":
             base_counter[str(item.get("a_base", "?"))] += 1
             base_counter[str(item.get("b_base", "?"))] += 1
+        if item["type"] == "merge_sort":
+            base_counter[str(item.get("base", "?"))] += 1
 
     return jsonify(
         {

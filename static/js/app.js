@@ -109,6 +109,47 @@ if (assembleBtn) {
   });
 }
 
+const mergeSortBtn = byId("merge-sort-btn");
+if (mergeSortBtn) {
+  mergeSortBtn.addEventListener("click", async () => {
+    const resultBox = byId("merge-result");
+    const stepsBox = byId("merge-steps");
+    try {
+      const raw = byId("merge-input").value || "";
+      const items = raw.split(/[,\n，\s]+/).map((s) => s.trim()).filter(Boolean);
+      const payload = { items, base: Number(byId("merge-base").value) };
+      const data = await fetchJSON("/api/merge-sort", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      const r = data.result;
+      resultBox.textContent = [
+        `输入序列: [${r.input.join(", ")}]`,
+        `最终结果: [${r.sorted.join(", ")}]`,
+        `步骤总数: ${r.steps.length}`,
+      ].join("\n");
+
+      stepsBox.innerHTML = "";
+      r.steps.forEach((step, idx) => {
+        const line = document.createElement("div");
+        line.className = `merge-step step-${step.phase}`;
+        if (step.phase === "split") {
+          line.textContent = `#${idx + 1} [深度${step.depth}] 拆分 ${JSON.stringify(step.source)} -> ${JSON.stringify(step.left)} | ${JSON.stringify(step.right)}`;
+        } else if (step.phase === "merge") {
+          line.textContent = `#${idx + 1} [深度${step.depth}] 归并 ${JSON.stringify(step.left)} + ${JSON.stringify(step.right)} => ${JSON.stringify(step.result)}`;
+        } else {
+          line.textContent = `#${idx + 1} [深度${step.depth}] 基线 ${JSON.stringify(step.segment)}`;
+        }
+        stepsBox.appendChild(line);
+      });
+      await Promise.all([refreshHistory(), refreshStats()]);
+    } catch (err) {
+      showError(resultBox, err.message);
+      if (stepsBox) stepsBox.innerHTML = "";
+    }
+  });
+}
+
 for (const btn of document.querySelectorAll(".calc-btn")) {
   btn.addEventListener("click", async () => {
     const resultBox = byId("calc-result");
@@ -337,12 +378,13 @@ async function refreshStats() {
   const typeCounter = data.stats.type_counter || {};
   const baseCounter = data.stats.base_counter || {};
 
-  const labels = ["转换操作", "算术操作", "运算器仿真", "指令汇编", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
+  const labels = ["转换操作", "算术操作", "运算器仿真", "指令汇编", "归并排序", ...Object.keys(baseCounter).map((b) => `${b}进制输入`)];
   const values = [
     typeCounter.convert || 0,
     typeCounter.arithmetic || 0,
     typeCounter.simulator || 0,
     typeCounter.instruction || 0,
+    typeCounter.merge_sort || 0,
     ...Object.values(baseCounter),
   ];
 
