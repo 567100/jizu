@@ -529,9 +529,19 @@ body[data-page="cpu_sim"] .app-layout { grid-template-columns: 260px minmax(980p
 .cpu-card { background: #f8faff; border: 1px solid #dce4ff; border-radius: 12px; padding: 10px; }
 .cpu-registers { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
 
-.reg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; width: 100%; }
+.reg-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 8px; width: 100%; }
 .reg-item { display: grid; gap: 4px; font-size: .85rem; background: #eef3ff; border: 1px solid #d6e0ff; border-radius: 8px; padding: 6px; min-width: 0; }
-.reg-item input { padding: 6px; border-radius: 6px; border: 1px solid #cfd9fb; }
+.reg-item input { width: 100%; max-width: 84px; padding: 5px 6px; border-radius: 6px; border: 1px solid #cfd9fb; font-size: .82rem; }
+.cpu-note {
+  margin-top: 10px;
+  background: #f4f7ff;
+  border: 1px dashed #c9d7ff;
+  border-radius: 10px;
+  padding: 10px;
+  color: #35518f;
+  font-size: .88rem;
+  line-height: 1.5;
+}
 
 .cpu-diagram { width: 100%; min-height: 180px; border: 1px solid #d6e0ff; border-radius: 10px; background: #fff; }
 .cpu-diagram rect,.cpu-diagram line { stroke: #3d60b1; fill: #eef3ff; stroke-width: 2; }
