@@ -450,7 +450,7 @@ function initCpuSimPage() {
 
     sortResultBox.textContent = state.done
       ? `排序完成 ✅\n输入: [${state.origin.join(", ")}]\n输出: [${state.mem.join(", ")}]`
-      : `排序进行中...\n当前主存: [${state.mem.join(", ")}]`;
+      : `排序准备中...\n当前主存: [${state.mem.join(", ")}]`;
 
     pipelineBox.innerHTML = ["IF取指","ID译码","OF取数","EX执行","WB回写"].map((x,i)=>`<span class="chip">T${i}: ${x}</span>`).join('');
     for (const input of document.querySelectorAll(".reg-item input")) {
