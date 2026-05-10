@@ -411,3 +411,130 @@ initSimulator();
 Promise.all([refreshHistory(), refreshStats()]).catch((err) => {
   console.error("初始化失败", err);
 });
+
+function initCpuSimPage() {
+  const loadAsmBtn = byId("cpu-load-asm");
+  if (!loadAsmBtn) return;
+  const asmFile = byId("cpu-asm-file");
+  const memFile = byId("cpu-mem-file");
+  const memInput = byId("cpu-mem-input");
+  const asmInput = byId("cpu-asm-input");
+  const machineBox = byId("cpu-machine");
+  const memoryBox = byId("cpu-memory");
+  const sortResultBox = byId("cpu-sort-result");
+  const logBox = byId("cpu-exec-log");
+  const pipelineBox = byId("cpu-pipeline");
+  const regGeneral = byId("cpu-registers-general");
+  const regSpecial = byId("cpu-registers-special");
+  const regPreset = byId("cpu-reg-preset");
+
+  const state = {
+    g: {R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0},
+    s: {PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0},
+    mem: [], ins: [], labels: {}, timer: null, ip: 0, done: false, origin: [],
+  };
+
+  const render = () => {
+    regGeneral.innerHTML = '<h5>通用寄存器组</h5>' + Object.entries(state.g).map(([k,v]) => `<label class="reg-item">${k}<input data-reg="${k}" type="number" value="${v}" /></label>`).join('');
+    regSpecial.innerHTML = '<h5>专用寄存器组</h5>' + Object.entries(state.s).map(([k,v]) => `<label class="reg-item">${k}<input data-reg="${k}" type="number" value="${v}" /></label>`).join('');
+    const mode = regPreset?.value || "all";
+    regGeneral.style.display = mode === "special" ? "none" : "grid";
+    regSpecial.style.display = mode === "general" ? "none" : "grid";
+    memoryBox.textContent = state.mem.map((v,i)=>`[${String(i).padStart(3,'0')}] = ${v}`).join('\n') || '主存为空';
+    sortResultBox.textContent = state.done
+      ? `排序完成 ✅\n输入: [${state.origin.join(", ")}]\n输出: [${state.mem.join(", ")}]`
+      : `排序进行中...\n当前主存: [${state.mem.join(", ")}]`;
+    pipelineBox.innerHTML = ["IF取指","ID译码","OF取数","EX执行","WB回写"].map((x,i)=>`<span class="chip">T${i}: ${x}</span>`).join('');
+    for (const input of document.querySelectorAll(".reg-item input")) {
+      input.addEventListener("change", () => {
+        const k = input.dataset.reg;
+        if (k in state.g) state.g[k] = Number(input.value || 0);
+        if (k in state.s) state.s[k] = Number(input.value || 0);
+      });
+    }
+  };
+
+  const loadAsm = () => {
+    state.labels = {};
+    state.ins = [];
+    for (const raw of asmInput.value.split(/\n+/).map(s => s.trim()).filter(Boolean)) {
+      if (raw.includes(":")) {
+        const [label, rest] = raw.split(":", 2);
+        state.labels[label.trim().toUpperCase()] = state.ins.length;
+        if (rest?.trim()) state.ins.push(rest.trim());
+      } else {
+        state.ins.push(raw);
+      }
+    }
+    machineBox.textContent = ["地址  汇编指令               机器码(hex/bin)", ...state.ins.map((line,i)=>`${String(i).padStart(4,'0')}  ${line.padEnd(18, ' ')}  0x${(0x8000+i).toString(16).toUpperCase()} / ${(0x8000+i).toString(2).padStart(16,'0')}`)].join('\n');
+    state.ip = 0; state.s.PC = 0; state.done = false; render();
+  };
+
+  const step = () => {
+    if (!state.ins.length || state.done) return;
+    const line = state.ins[state.ip % state.ins.length];
+    const parts = line.replaceAll(",", " ").split(/\s+/).filter(Boolean);
+    const op = (parts[0] || "").toUpperCase();
+    const nextIp = () => { state.ip += 1; };
+    const reg = (name) => name?.toUpperCase();
+    const val = (r) => state.g[reg(r)] ?? 0;
+    const set = (r, v) => { if (reg(r) in state.g) state.g[reg(r)] = v; };
+    state.s.IR = 0x8000 + state.ip; state.s.PC = state.ip;
+
+    if (op === "LDI") { set(parts[1], Number(parts[2] || 0)); nextIp(); }
+    else if (op === "ADD") { set(parts[1], val(parts[2]) + val(parts[3])); nextIp(); }
+    else if (op === "CMP") {
+      const i = val(parts[2]); const j = val(parts[3]);
+      state.s.MAR = i; state.s.MDR = state.mem[i] ?? 0; state.s.DR = state.mem[j] ?? 0;
+      set(parts[1], (state.mem[i] ?? 0) - (state.mem[j] ?? 0)); nextIp();
+    } else if (op === "JGT") {
+      if (val(parts[1]) > 0) state.ip = state.labels[(parts[2] || "").toUpperCase()] ?? (state.ip + 1);
+      else nextIp();
+    } else if (op === "JMP") {
+      state.ip = state.labels[(parts[1] || "").toUpperCase()] ?? (state.ip + 1);
+    } else if (op === "SWAP") {
+      const i = val(parts[1]); const j = val(parts[2]);
+      if (i >= 0 && j >= 0 && i < state.mem.length && j < state.mem.length) {
+        [state.mem[i], state.mem[j]] = [state.mem[j], state.mem[i]];
+      }
+      nextIp();
+    } else if (op === "HALT") {
+      state.done = true;
+      if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    } else {
+      nextIp();
+    }
+
+    if (state.ip >= state.ins.length) state.ip = state.ins.length - 1;
+    if (state.mem.every((v, i, a) => i === 0 || a[i - 1] <= v)) {
+      state.done = true;
+      if (state.timer) { clearInterval(state.timer); state.timer = null; }
+    }
+    const item = document.createElement('div'); item.className = 'merge-step step-merge'; item.textContent = `#${state.ip+1} ${line} | PC=${state.s.PC} MAR=${state.s.MAR} MDR=${state.s.MDR}`;
+    logBox.prepend(item);
+    state.ip += 1; render();
+  };
+
+  loadAsmBtn.addEventListener('click', async () => {
+    if (asmFile?.files?.[0]) asmInput.value = await asmFile.files[0].text();
+    loadAsm();
+  });
+  byId('cpu-load-mem')?.addEventListener('click', async () => {
+    const text = memFile?.files?.[0] ? await memFile.files[0].text() : (memInput?.value || '');
+    state.mem = (text.match(/-?\d+/g) || []).map(Number);
+    state.origin = state.mem.slice();
+    state.done = false;
+    if (memInput && !memFile?.files?.[0]) memInput.value = state.mem.join(",");
+    render();
+  });
+  regPreset?.addEventListener("change", render);
+  byId('cpu-step-btn')?.addEventListener('click', step);
+  byId('cpu-auto-btn')?.addEventListener('click', ()=>{ if (state.timer || state.done) return; state.timer = setInterval(step, 500); });
+  byId('cpu-stop-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} });
+  byId('cpu-reset-btn')?.addEventListener('click', ()=>{ if(state.timer){clearInterval(state.timer); state.timer=null;} state.g={R0:0,R1:0,R2:0,R3:0,R4:0,R5:0,R6:0,R7:0}; state.s={PC:0,MAR:0,MDR:0,IR:0,SR:0,DR:0,PSW:0}; state.mem=[]; state.ins=[]; state.labels={}; state.ip=0; state.done=false; state.origin=[]; asmInput.value=''; memInput.value=''; machineBox.textContent=''; logBox.innerHTML=''; render();});
+  state.mem = (memInput?.value.match(/-?\d+/g) || []).map(Number);
+  loadAsm();
+  render();
+}
+
+initCpuSimPage();
