@@ -490,19 +490,40 @@ function initCpuSimPage() {
     const reg = (name) => name?.toUpperCase();
     const val = (r) => state.g[reg(r)] ?? 0;
     const set = (r, v) => { if (reg(r) in state.g) state.g[reg(r)] = v; };
+
+    const readAddr = (token) => {
+      const t = (token || "").replace("[", "").replace("]", "");
+      if (reg(t) in state.g) return val(t);
+      return Number(t || 0);
+    };
+    const jumpTo = (label) => { state.ip = state.labels[(label || "").toUpperCase()] ?? state.ip + 1; };
+    let jumped = false;
+
     state.s.IR = 0x8000 + state.ip; state.s.PC = state.ip;
 
     if (op === "LDI") { set(parts[1], Number(parts[2] || 0)); nextIp(); }
     else if (op === "ADD") { set(parts[1], val(parts[2]) + val(parts[3])); nextIp(); }
+
+    else if (op === "SUB") { set(parts[1], val(parts[2]) - val(parts[3])); nextIp(); }
+    else if (op === "LD") {
+      const addr = readAddr(parts[2]); state.s.MAR = addr; state.s.MDR = state.mem[addr] ?? 0;
+      set(parts[1], state.s.MDR); nextIp();
+    } else if (op === "ST") {
+      const addr = readAddr(parts[2]); state.s.MAR = addr; state.s.MDR = val(parts[1]);
+      state.mem[addr] = state.s.MDR; nextIp();
+    }
     else if (op === "CMP") {
-      const i = val(parts[2]); const j = val(parts[3]);
-      state.s.MAR = i; state.s.MDR = state.mem[i] ?? 0; state.s.DR = state.mem[j] ?? 0;
-      set(parts[1], (state.mem[i] ?? 0) - (state.mem[j] ?? 0)); nextIp();
+      const left = val(parts[2]); const right = val(parts[3]);
+      set(parts[1], left - right); nextIp();
     } else if (op === "JGT") {
-      if (val(parts[1]) > 0) state.ip = state.labels[(parts[2] || "").toUpperCase()] ?? (state.ip + 1);
+      if (val(parts[1]) > 0) { jumpTo(parts[2]); jumped = true; }
+      else nextIp();
+    } else if (op === "JLT") {
+      if (val(parts[1]) < 0) { jumpTo(parts[2]); jumped = true; }
       else nextIp();
     } else if (op === "JMP") {
-      state.ip = state.labels[(parts[1] || "").toUpperCase()] ?? (state.ip + 1);
+      jumpTo(parts[1]); jumped = true;
+
     } else if (op === "SWAP") {
       const i = val(parts[1]); const j = val(parts[2]);
       if (i >= 0 && j >= 0 && i < state.mem.length && j < state.mem.length) {
@@ -517,14 +538,12 @@ function initCpuSimPage() {
     }
 
     if (state.ip >= state.ins.length) state.ip = state.ins.length - 1;
-    if (state.mem.every((v, i, a) => i === 0 || a[i - 1] <= v)) {
-      state.done = true;
-      if (state.timer) { clearInterval(state.timer); state.timer = null; }
 
-    }
     const item = document.createElement('div'); item.className = 'merge-step step-merge'; item.textContent = `#${state.ip+1} ${line} | PC=${state.s.PC} MAR=${state.s.MAR} MDR=${state.s.MDR}`;
     logBox.prepend(item);
-    state.ip += 1; render();
+    if (state.done && state.timer) { clearInterval(state.timer); state.timer = null; }
+    render();
+
   };
 
   loadAsmBtn.addEventListener('click', async () => {

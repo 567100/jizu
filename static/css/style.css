@@ -547,4 +547,3 @@ body[data-page="cpu_sim"] .app-layout { grid-template-columns: 260px minmax(980p
 .cpu-diagram rect,.cpu-diagram line { stroke: #3d60b1; fill: #eef3ff; stroke-width: 2; }
 .cpu-diagram text { fill: #29417f; font-size: 14px; font-family: "Segoe UI", "PingFang SC", sans-serif; }
 @media (max-width: 1180px) { body[data-page="cpu_sim"] .app-layout { grid-template-columns: 1fr; } .cpu-grid { grid-template-columns: 1fr; } }
-
