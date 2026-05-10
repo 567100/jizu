@@ -528,6 +528,10 @@ def instruction_page():
 def merge_sort_page():
     return render_template("index.html", page="merge_sort")
 
+@app.route("/cpu-sim")
+def cpu_sim_page():
+    return render_template("index.html", page="cpu_sim")
+
 
 @app.post("/api/convert")
 def api_convert():
